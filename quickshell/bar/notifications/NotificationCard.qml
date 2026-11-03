@@ -60,9 +60,14 @@ Item {
         width: card.width
         height: bg.height
         property bool flying: false
+        readonly property real swipe: Math.max(-1, Math.min(1, x / Math.max(1, width)))
         opacity: 1 - Math.min(1, Math.abs(x) / (width * 0.9)) * 0.85
+        rotation: surface.swipe * 3.5
+        scale: drag.active ? 0.985 : 1
+        transformOrigin: Item.Center
 
         Behavior on x { enabled: !drag.active && !surface.flying; MotionAnimation { role: "morph" } }
+        Behavior on scale { enabled: !drag.active; MotionAnimation { role: "press" } }
         MotionAnimation { id: flyOut; target: surface; property: "x"; role: "exit"; onFinished: card.removed() }
 
         DragHandler {
@@ -112,11 +117,11 @@ Item {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: Theme.space.md
+                    spacing: Theme.space.sm
 
                     NotifIcon {
-                        Layout.preferredWidth: Theme.components.dp(40)
-                        Layout.preferredHeight: Theme.components.dp(40)
+                        Layout.preferredWidth: Theme.components.dp(36)
+                        Layout.preferredHeight: Theme.components.dp(36)
                         Layout.alignment: Qt.AlignTop
                         notif: card.notif
                         critical: card.critical
@@ -163,7 +168,7 @@ Item {
                             linkColor: Theme.color.primary
                             wrapMode: Text.Wrap
                             elide: Text.ElideRight
-                            maximumLineCount: card.expanded ? 14 : (card.popup ? 3 : 2)
+                            maximumLineCount: card.expanded ? 14 : 2
                             onLinkActivated: link => Qt.openUrlExternally(link)
                         }
                     }
@@ -171,14 +176,16 @@ Item {
                     // закрити
                     Rectangle {
                         id: closeBtn
-                        Layout.preferredWidth: Theme.components.dp(28)
-                        Layout.preferredHeight: Theme.components.dp(28)
+                        Layout.preferredWidth: Theme.components.dp(26)
+                        Layout.preferredHeight: Theme.components.dp(26)
                         Layout.alignment: Qt.AlignTop
                         radius: closeMa.pressed ? Theme.shape.iconButtonPressed : height / 2
                         color: "transparent"
                         opacity: card.popup ? (hover.hovered ? 1 : 0) : 0.8
+                        scale: closeMa.pressed ? 0.9 : 1
                         Behavior on radius { MotionAnimation { role: "morph" } }
                         Behavior on opacity { MotionAnimation { role: "hover" } }
+                        Behavior on scale { MotionAnimation { role: "press" } }
                         Rectangle {
                             anchors.fill: parent
                             radius: parent.radius
@@ -205,7 +212,7 @@ Item {
                 // дії
                 Flow {
                     Layout.fillWidth: true
-                    Layout.leftMargin: Theme.components.dp(40) + Theme.space.md
+                    Layout.leftMargin: Theme.components.dp(36) + Theme.space.sm
                     visible: card.shownActions.length > 0
                     spacing: Theme.space.xs
 
@@ -214,11 +221,13 @@ Item {
                         Rectangle {
                             id: act
                             required property var modelData
-                            implicitHeight: Theme.components.dp(32)
+                            implicitHeight: Theme.components.dp(30)
                             implicitWidth: actTxt.implicitWidth + Theme.space.xl
                             radius: actMa.pressed ? Theme.shape.buttonPressed : height / 2
                             color: card.critical ? Theme.color.error : Theme.color.secondaryContainer
+                            scale: actMa.pressed ? 0.96 : 1
                             Behavior on radius { MotionAnimation { role: "morph" } }
+                            Behavior on scale { MotionAnimation { role: "press" } }
                             Rectangle {
                                 anchors.fill: parent
                                 radius: parent.radius
@@ -251,11 +260,13 @@ Item {
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: Theme.components.dp(5)
                 x: Theme.space.lg
-                height: Theme.components.dp(3)
+                height: Theme.components.dp(card.notif.paused ? 4 : 3)
                 radius: height / 2
                 width: (parent.width - Theme.space.lg * 2) * Math.max(0, card.notif.remainingMs / card.notif.totalMs)
                 color: card.critical ? Theme.color.error : Theme.color.primary
-                opacity: 0.8
+                opacity: card.notif.paused ? 1 : 0.8
+                Behavior on height { MotionAnimation { role: "hover" } }
+                Behavior on opacity { MotionAnimation { role: "hover" } }
                 Behavior on width { NumberAnimation { duration: 40 } }
             }
         }

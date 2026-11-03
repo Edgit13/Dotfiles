@@ -5,14 +5,9 @@ import Quickshell.Networking
 import QtQuick
 
 // ==========================================================================
-// WifiService.qml — бекенд повного Wi-Fi менеджера для WifiSurface.qml.
-// Увімк/вимк Wi-Fi перевикористовує Networking.wifiEnabled (той самий
-// реактивний модуль, що вже дає Network.qml/LinkSurface.qml) — окремого
-// опитування для on/off НЕ додано. Сканування списку мереж і конект/
-// дисконект тут з нуля, бо в проєкті цього раніше не було ніде.
-//
-// nmcli-команди повністю в цьому файлі — WifiSurface.qml не містить
-// жодного парсингу шелл-виводу, тільки читає готові властивості.
+// WifiService.qml — бекенд Network Manager+ для Edots Quickshell.
+// Повне керування мережами: Wi-Fi сканування та підключення, Ethernet стан
+// та швидкість, VPN з'єднання, збережені профілі, IP/Шлюз/DNS та діагностика.
 // ==========================================================================
 
 Singleton {
@@ -28,10 +23,22 @@ Singleton {
 
     readonly property var currentNetwork: networks.find(n => n.inUse) || null
 
+    // ---- Network Manager+ розширення ----
+    property var ethernetDevices: [] // [{ device, state, connection, connected, speed }]
+    property var vpnConnections: []  // [{ name, type, uuid, device, active }]
+    property var savedConnections: []// [{ name, type, uuid, device, active }]
+    property var ipDetails: ({ ip: "", gateway: "", dns: [], interface: "" })
+    property var diagnostics: ({ tested: false, gateway_ok: false, internet_ok: false, latency: -1.0 })
+    property bool diagRunning: false
+
+    readonly property bool hasEthernet: ethernetDevices.some(d => d.connected)
+    readonly property bool hasVpn: vpnConnections.some(v => v.active)
+
     function scan() {
         if (scanning) return
         scanning = true
         rescanProc.running = true
+        refreshInfo(false)
     }
 
     Process {
@@ -49,7 +56,9 @@ Singleton {
                 const lines = text.split("\n")
                 for (const line of lines) {
                     if (!line.trim()) continue
-                    const parts = line.split(":")
+                    // Надійна розбивка nmcli -t з урахуванням екранованих двокрапок (\:)
+                    const rawParts = line.split(/(?<!\\):/)
+                    const parts = rawParts.map(p => p.replace(/\\:/g, ":"))
                     const ssid = parts[0]
                     if (!ssid) continue // приховані/порожні SSID пропускаємо
                     const signal = parseInt(parts[1], 10) || 0
@@ -94,17 +103,13 @@ Singleton {
     Process {
         id: connectProc
         stdout: StdioCollector {}
-        stderr: StdioCollector {
-            id: connectErr
-        }
+        stderr: StdioCollector { id: connectErr }
         onExited: (exitCode) => {
             if (exitCode === 0) {
                 root.connectionState = "connected"
                 root.scan()
             } else {
                 root.connectionState = "failed"
-                // Коротке повідомлення, без паролю (пароль ніде не логуємо
-                // і не зберігаємо — nmcli сам керує збереженими профілями).
                 root.connectionError = "Не вдалося підключитись"
             }
         }
@@ -134,5 +139,74 @@ Singleton {
     function cancelPassword() {
         root.connectionState = "idle"
         root.pendingSsid = ""
+    }
+
+    // ---- Network Manager+: опитування Ethernet / VPN / IP / Діагностики ----
+    function refreshInfo(runPing) {
+        if (netInfoProc.running) return
+        if (runPing) root.diagRunning = true
+        netInfoProc.command = runPing
+            ? ["python3", Quickshell.env("HOME") + "/Dotfiles/quickshell/bar/scripts/netinfo.py", "--ping"]
+            : ["python3", Quickshell.env("HOME") + "/Dotfiles/quickshell/bar/scripts/netinfo.py"]
+        netInfoProc.running = true
+    }
+
+    Process {
+        id: netInfoProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.diagRunning = false
+                if (!text || !text.trim()) return
+                try {
+                    const data = JSON.parse(text)
+                    if (Array.isArray(data.ethernet)) root.ethernetDevices = data.ethernet
+                    if (Array.isArray(data.vpn)) root.vpnConnections = data.vpn
+                    if (Array.isArray(data.saved)) root.savedConnections = data.saved
+                    if (data.details) root.ipDetails = data.details
+                    if (data.diag && data.diag.tested) root.diagnostics = data.diag
+                } catch (e) {
+                    console.warn("WifiService netinfo parse error:", e)
+                }
+            }
+        }
+    }
+
+    function connectVpn(uuid) {
+        vpnUpProc.command = ["nmcli", "connection", "up", "uuid", uuid]
+        vpnUpProc.running = true
+    }
+    Process {
+        id: vpnUpProc
+        onExited: root.refreshInfo(false)
+    }
+
+    function disconnectVpn(uuid) {
+        vpnDownProc.command = ["nmcli", "connection", "down", "uuid", uuid]
+        vpnDownProc.running = true
+    }
+    Process {
+        id: vpnDownProc
+        onExited: root.refreshInfo(false)
+    }
+
+    function deleteSaved(uuid) {
+        delConnProc.command = ["nmcli", "connection", "delete", "uuid", uuid]
+        delConnProc.running = true
+    }
+    Process {
+        id: delConnProc
+        onExited: {
+            root.refreshInfo(false)
+            root.scan()
+        }
+    }
+
+    function runDiagnostics() {
+        refreshInfo(true)
+    }
+
+    Component.onCompleted: {
+        scan()
+        refreshInfo(false)
     }
 }

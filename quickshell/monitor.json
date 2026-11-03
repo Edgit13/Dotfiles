@@ -1,0 +1,9 @@
+{
+  "cpuLimit": 210,
+  "memLimit": 7424,
+  "shellMemLimit": 1024,
+  "whitelist": "Main",
+  "scope": "system",
+  "shellCpuLimit": 80,
+  "enabled": true
+}

@@ -28,7 +28,7 @@ PanelWindow {
         return MangoService.focusedMonitor === monitorName
     }
 
-    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "wifi", "media", "power", "binds", "resources", "dashboard"]
+    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "audio", "display", "wifi", "bluetooth", "media", "power", "binds", "resources", "dashboard"]
     readonly property string activeSurface: ShellState.activeSurface
     // дашборд тут лише коли він НЕ морфиться з бару
     readonly property bool isAllowedSurface: overlaySurfaces.indexOf(activeSurface) >= 0
@@ -51,7 +51,10 @@ PanelWindow {
         wallpaper: { icon: "\ue1bc", title: "ui.surface.wallpaper", w: 620, h: 480, end: false, typing: false },
         clipboard: { icon: "\ue14f", title: "ui.surface.clipboard", w: 540, h: 480, end: false, typing: true },
         mixer:     { icon: "\ue429", title: "ui.surface.mixer",     w: 480, h: 420, end: true,  typing: false },
+        audio:     { icon: "\ue050", title: "ui.surface.audio",     w: 600, h: 660, end: true,  typing: false },
+        display:   { icon: "\ue30f", title: "ui.surface.display",   w: 640, h: 680, end: true,  typing: false },
         wifi:      { icon: "\ue63e", title: "ui.surface.wifi",      w: 460, h: 440, end: true,  typing: false },
+        bluetooth: { icon: "\ue1a7", title: "ui.surface.bluetooth", w: 460, h: 480, end: true,  typing: false },
         media:     { icon: "\ue405", title: "ui.surface.media",     w: 460, h: 320, end: true,  typing: false },
         power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 290, end: true,  typing: false },
         binds:     { icon: "\ue312", title: "ui.surface.binds",     w: 700, h: 620, end: false, typing: true },
@@ -236,9 +239,27 @@ PanelWindow {
                     }
                     Loader {
                         anchors.fill: parent
+                        active: win.shownSurface === "audio"
+                        visible: active
+                        sourceComponent: AudioStudioSurface {}
+                    }
+                    Loader {
+                        anchors.fill: parent
+                        active: win.shownSurface === "display"
+                        visible: active
+                        sourceComponent: DisplaySurface {}
+                    }
+                    Loader {
+                        anchors.fill: parent
                         active: win.shownSurface === "wifi"
                         visible: active
                         sourceComponent: WifiSurface {}
+                    }
+                    Loader {
+                        anchors.fill: parent
+                        active: win.shownSurface === "bluetooth"
+                        visible: active
+                        sourceComponent: BluetoothSurface {}
                     }
                     Loader {
                         anchors.fill: parent

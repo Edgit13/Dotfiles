@@ -1,4 +1,5 @@
 //@ pragma UseQApplication
+import "root:/states"
 import QtQuick
 import QtQuick.Effects
 import Quickshell
@@ -51,11 +52,65 @@ Item {
         // watchChanges only emits fileChanged — without reload() the text stays stale
         onFileChanged: reload()
         onLoaded: root.wallpaperPath = text().trim()
-        onTextChanged: root.wallpaperPath = text().trim()
+        onTextChanged: {
+            root.wallpaperPath = text().trim()
+            // the wallpaper picker writes this file after awww changed the image
+            root.refreshWallpaper()
+        }
     }
 
+    // ---- wallpaper source ----
+    // awww is the source of truth for what is actually on screen. The text file
+    // can be stale (a restored daemon cache, an install script, another tool),
+    // so ask the compositor on startup and every time the lock opens.
+    property var wallpaperByScreen: ({})
+    property string wallpaperFromCompositor: ""
+
     property string wallpaperPath: ""
-    property string wallpaperUrl: wallpaperPath.length > 0 ? "file://" + wallpaperPath : ""
+    readonly property string effectiveWallpaper: wallpaperFromCompositor.length > 0
+        ? wallpaperFromCompositor : wallpaperPath
+    readonly property string wallpaperUrl: effectiveWallpaper.length > 0
+        ? "file://" + effectiveWallpaper : ""
+
+    function refreshWallpaper() {
+        if (!wallpaperQuery.running) wallpaperQuery.running = true
+    }
+
+    function parseWallpaperQuery(out) {
+        const map = {}
+        let first = ""
+        const lines = String(out || "").split("\n")
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i]
+            const at = line.indexOf("currently displaying:")
+            if (at < 0) continue
+            // "currently displaying: image: /path" or "animated: /path"
+            let p = line.substring(at + "currently displaying:".length).trim()
+            p = p.replace(/^(image|animated|video):\s*/, "").trim()
+            if (!p.length) continue
+            if (!first.length) first = p
+            const m = line.match(/^\s*:?\s*([^:]+):/)
+            if (m && m[1].trim().length > 0) map[m[1].trim()] = p
+        }
+        wallpaperByScreen = map
+        wallpaperFromCompositor = first
+    }
+
+    // per-output wallpaper, falling back to the text file
+    function wallpaperFor(surface) {
+        const name = surface && surface.screen ? surface.screen.name : ""
+        let p = (name.length > 0 && wallpaperByScreen[name]) ? wallpaperByScreen[name] : wallpaperFromCompositor
+        if (!p || !p.length) p = wallpaperPath
+        return p && p.length > 0 ? "file://" + p : ""
+    }
+
+    Process {
+        id: wallpaperQuery
+        command: ["sh", "-c", "awww query 2>/dev/null"]
+        stdout: StdioCollector { onStreamFinished: root.parseWallpaperQuery(text) }
+    }
+
+    Component.onCompleted: root.refreshWallpaper()
 
     readonly property string greeting: {
         var h = new Date().getHours()
@@ -115,6 +170,8 @@ Item {
     WlSessionLock {
         id: lock
         locked: false
+        // re-read the live wallpaper every time the lock opens
+        onLockedChanged: if (locked) root.refreshWallpaper()
         onSecureChanged: if (!secure) console.log("Lockscreen: unlocked")
 
         WlSessionLockSurface {
@@ -160,7 +217,7 @@ Item {
                 Image {
                     id: wallpaper
                     anchors.fill: parent
-                    source: root.wallpaperUrl
+                    source: root.wallpaperFor(surf)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     visible: false
@@ -168,7 +225,7 @@ Item {
                 MultiEffect {
                     anchors.fill: parent
                     source: wallpaper
-                    blurEnabled: true
+                    blurEnabled: !ReliefState.effects
                     blur: 0.35
                     blurMax: 32
                     visible: wallpaper.status === Image.Ready

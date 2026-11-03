@@ -32,7 +32,10 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 |---|---|
 | 🎨 **Two designs** | Material 3 Expressive and Nothing, light and dark. Switch live in *Settings → Appearance* or with `ipc call theme toggleDesign`. Animated transitions: `fade`, `dots`, `scan` or off. |
 | 🧩 **Modular bar** | Per-monitor bar on any edge (top / bottom / left / right). Launcher, active window, media player, resources, workspaces, clock, volume, network, battery, notifications, power. Modules can be toggled from Settings. |
-| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, Wi-Fi, media, power menu, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
+| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi, media, power menu, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
+| 🔎 **Advanced launcher** | One field for everything: apps, files (`/report`), a calculator (`2+2`), emoji (`:fire`) and shell commands (`>htop`). <kbd>Enter</kbd> opens or copies, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs a command in the terminal. |
+| 🎚 **Audio studio** | 10-band equalizer with presets and preamp, global bypass and RNNoise microphone noise reduction. Runs through EasyEffects; <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> or `edots audio`. |
+| 🖥 **Display centre** | Per-output on/off, resolution, refresh rate, scale, rotation, arrangement and adaptive sync. Every apply asks you to keep it, otherwise the previous layout returns after 18 seconds. <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> or `edots display`. |
 | 🖼 **Wallpapers by color** | The picker sorts your wallpapers into Blue / Purple / Pink / Red / Orange / Yellow / Green / Cyan / Monochrome. Files are never touched; the index lives in `~/.cache/quickshell`. |
 | 📊 **Dashboard** | Overview, Media, Performance, Workspaces and Planner tabs. Weather (Open-Meteo, no API key), CPU / RAM / disk, brightness, volume, calendar with timed tasks. |
 | 🔔 **Own notification daemon** | Popups, a notification center and Do Not Disturb. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
@@ -42,6 +45,7 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 | 🎮 **Game mode** | One switch turns off blur, animations and effects; the bar shows a pill while it is active. |
 | 🎥 **Screen tools** | Screenshot / OCR / recording overlay (QuickSnip) with a recording indicator in the bar. |
 | 🌍 **Languages** | English and Ukrainian UI. |
+| 🩺 **`edots` CLI** | One command for every surface — `edots launcher`, `edots settings`, `edots reload` — and `edots doctor` checks packages, fonts, links and services. |
 
 <br>
 
@@ -128,30 +132,49 @@ What `install.sh` does:
 1. Clones the repo and `Edot-Wallpapers` (into `~/Pictures/Wallpapers`).
 2. Installs packages from pacman and the AUR (`yay` is bootstrapped automatically).
 3. Installs Google Sans Flex.
-4. Runs `./sync.sh install` to symlink configs into `~/.config`.
-5. Registers and starts the systemd user services (`swayidle`, `edots-lockscreen`).
+4. Runs `./sync.sh install` to symlink configs into `~/.config` and install the `edots` command.
+5. Registers and starts the `swayidle` systemd user service.
 6. Builds `lockscreen/pam-auth`.
 7. Generates the first palette from the first wallpaper.
+8. Builds the wallpaper colour index (needs `python-pillow`).
+9. Links the Firefox chrome files into the profile Firefox actually launches.
 
 Start the shell manually:
 
 ```sh
-qs -p ~/.config/quickshell/bar/shell.qml
+edots reload
+# or: qs -p ~/.config/quickshell/bar/shell.qml
 ```
 
-`install.sh --auto` runs without prompts (NixOS bootstrap and unattended Arch).
+Check that everything is in place:
+
+```sh
+edots doctor
+```
+
+`edots doctor` verifies packages, fonts, config symlinks, the running bar, systemd services,
+the palette and the Firefox chrome. `./install.sh --auto` runs without prompts
+(NixOS bootstrap and unattended Arch); `--dry-run` changes nothing.
 
 ### Wallpaper color index
 
-The color filter in the wallpaper selector needs a one-time scan (and a rescan after adding wallpapers):
-open **Settings → Wallpapers → Analyze wallpapers**. It runs `scripts/wallpaper_color_index.py`
-and writes `~/.cache/quickshell/wallpaper-colors.json`. Your image files are not modified.
+The color filter in the wallpaper selector needs a scan (and a rescan after adding wallpapers).
+`install.sh` runs it once automatically; later use **Settings → Wallpapers → Analyze wallpapers**.
+It writes `~/.cache/quickshell/wallpaper-colors.json` and never modifies your image files.
+If it did not run, install `python-pillow` and rerun it from Settings.
+
+Firefox chrome is linked automatically. If you use a different profile, rerun:
+
+```sh
+./sync.sh firefox          # link every detected profile
+./sync.sh firefox --check  # report without changing anything
+```
 
 <br>
 
 ## ⌨️ Keybinds
 
-Defined in `mango/binds.conf`.
+Defined in `mango/binds.conf`; press <kbd>Super</kbd>+<kbd>/</kbd> for the live cheat-sheet.
 
 | Bind | Action |
 |---|---|
@@ -160,15 +183,49 @@ Defined in `mango/binds.conf`.
 | <kbd>Super</kbd>+<kbd>V</kbd> | Clipboard history |
 | <kbd>Super</kbd>+<kbd>W</kbd> | Wi-Fi |
 | <kbd>Super</kbd>+<kbd>X</kbd> | Mixer |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> | Audio studio (EQ, presets, mic noise reduction) |
+| <kbd>Super</kbd>+<kbd>P</kbd> | Media player |
 | <kbd>Super</kbd>+<kbd>O</kbd> | Power menu |
 | <kbd>Super</kbd>+<kbd>A</kbd> | Settings |
 | <kbd>Super</kbd>+<kbd>D</kbd> | Dashboard |
 | <kbd>Super</kbd>+<kbd>T</kbd> | Task manager |
-| <kbd>Super</kbd>+<kbd>U</kbd> | QuickSnip (screen capture / recording) |
+| <kbd>Super</kbd>+<kbd>/</kbd> | Keybind cheat-sheet |
+| <kbd>Super</kbd>+<kbd>N</kbd> | Notification center |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> / <kbd>Ctrl</kbd>+<kbd>N</kbd> | Clear notifications / Do Not Disturb |
+| <kbd>Super</kbd>+<kbd>U</kbd> or <kbd>Print</kbd> | QuickSnip (screen capture / recording) |
 | <kbd>Super</kbd>+<kbd>L</kbd> | Lock screen |
 | <kbd>Super</kbd>+<kbd>F3</kbd> | Suspend (lock, then suspend) |
-| <kbd>Super</kbd>+<kbd>Esc</kbd> | Close the open surface |
+| <kbd>Super</kbd>+<kbd>Esc</kbd> | Close every open surface |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> | Restart the bar shell |
 | <kbd>Super</kbd>+<kbd>B</kbd> / <kbd>Super</kbd>+<kbd>E</kbd> | Firefox / Files |
+| <kbd>Super</kbd>+<kbd>Return</kbd> | Terminal |
+| <kbd>Super</kbd>+<kbd>Q</kbd> | Close window |
+| <kbd>Super</kbd>+<kbd>R</kbd> | Reload MangoWM config |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> | Toggle dock |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> | Display centre |
+| <kbd>Super</kbd>+<kbd>F1</kbd> | Game mode |
+
+Display changes are runtime-only (they do not rewrite the MangoWC config). If a mode leaves you without a picture, wait 18 seconds or run `edots display revert` from a TTY.
+
+In the launcher: `2+2` or `=2+2` opens the calculator, `:fire` searches emoji, `/report` searches files and `>htop` is a shell command. File search uses `fd` when available and falls back to `find`.
+
+### Windows & tags
+
+| Bind | Action |
+|---|---|
+| <kbd>Super</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | Switch tag |
+| <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd> | Move window to tag |
+| <kbd>Super</kbd>+<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> | Focus window |
+| <kbd>Super</kbd>+<kbd>Tab</kbd> | Switch layout |
+| <kbd>Super</kbd>+<kbd>F</kbd> | Toggle floating |
+| <kbd>Super</kbd>+<kbd>S</kbd> / <kbd>Shift</kbd>+<kbd>S</kbd> | Scratchpad / minimize |
+| <kbd>Super</kbd>+<kbd>J</kbd> or <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd> | Toggle split direction |
+| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd><kbd>→</kbd> | Move window to monitor |
+| <kbd>Ctrl</kbd>+<kbd>Super</kbd>+<kbd>←</kbd><kbd>→</kbd> | Move tag to monitor |
+| <kbd>Super</kbd>+scroll | Previous / next used tag |
+| <kbd>Super</kbd>+drag | Move / resize window |
+
+Media, brightness and playback keys work while the screen is locked.
 
 Surfaces opened from a keybind appear on the **focused monitor**; clicking a bar module opens it on that bar's monitor.
 
@@ -176,24 +233,33 @@ Surfaces opened from a keybind appear on the **focused monitor**; clicking a bar
 
 ## 🔌 IPC
 
-Everything is scriptable through Quickshell IPC:
+The `edots` command (installed by `sync.sh`) wraps every surface:
 
 ```sh
-alias edots='qs -p ~/.config/quickshell/bar/shell.qml ipc call'
-
-edots pill toggleLauncher        # also: toggleWallpaper, toggleClipboard, toggleMixer,
-                                 #       toggleWifi, toggleMedia, togglePower,
-                                 #       toggleBinds, toggleResources, close
-edots dashboard toggle           # open | toggle | close
-edots tasks toggle
-edots settingsapp toggle
-edots screentool toggle          # open | close | toggle | stop (stops a recording)
-edots notifications toggle       # open | close | clear | dnd
-edots osd volumeUp               # volumeDown, volumeMute, brightnessUp, brightnessDown
-edots theme toggleDesign         # Material <-> Nothing
-edots theme setMode dark         # or: light, toggleMode
-edots theme setTransition dots   # off | fade | dots | scan
+edots launcher           # also: wall, clipboard, wifi, mixer, audio, media, power, binds
+edots settings
+edots dashboard
+edots tasks
+edots screenshot         # stop, to end a recording
+edots notifications      # clear, dnd
+edots osd volumeUp       # volumeDown, volumeMute, brightnessUp, brightnessDown
+edots theme toggleDesign # Material <-> Nothing
+edots theme setMode dark # or: light, toggleMode
+edots theme setTransition dots  # off | fade | dots | scan
+edots reload             # restart the bar
+edots doctor             # health check
 ```
+
+For raw Quickshell IPC, use `edots ipc <target> <function>` or call `qs` directly:
+
+```sh
+edots ipc pill toggleLauncher
+qs -p ~/.config/quickshell/bar/shell.qml ipc call dashboard toggle
+```
+
+Available raw targets include `pill` (`toggleLauncher`, `toggleWallpaper`, `toggleClipboard`,
+`toggleMixer`, `toggleAudio`, `toggleWifi`, `toggleMedia`, `togglePower`, `toggleBinds`, `toggleResources`, `close`),
+`audio`, `dashboard`, `tasks`, `settingsapp`, `screentool`, `notifications`, `osd` and `theme`.
 
 <br>
 
@@ -229,7 +295,7 @@ quickshell/bar/               # the shell
 ├── shell/                    # BarWindow, MorphSurface, SurfaceOverlay, ShellState
 ├── modules/                  # bar modules (clock, volume, network, media, …)
 │   └── common/               # BarModule, BarButton, BarRingStat, BarRevealButton, BarIcon
-├── surfaces/                 # launcher, wallpapers, clipboard, mixer, Wi-Fi, power, …
+├── surfaces/                 # launcher, wallpapers, clipboard, mixer, audio, Wi-Fi, power, …
 ├── dashboard/                # dashboard tabs and widgets
 ├── notifications/            # popups + notification center
 ├── osd/  dock/  screentool/  # overlays, dock, capture & recording
@@ -240,8 +306,8 @@ quickshell/bar/               # the shell
 └── tools/                    # mango-probe.sh
 
 mango/                        # MangoWM config (binds, rules, animations, swayidle, scripts)
-edots/                        # CLI tools: task-manager, tui-player, tool-manager (upkg, utimer)
-systemd/                      # user units: swayidle, edots-lockscreen
+edots/                        # CLI tools: edots, task-manager, tui-player, tool-manager (upkg, utimer)
+systemd/                      # user unit: swayidle
 fish/ ghostty/ kitty/ gtk-3.0/ gtk-4.0/ firefox/ rofi/ nvim/
 install.sh  sync.sh           # bootstrap and symlink manager
 ```

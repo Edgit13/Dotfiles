@@ -42,10 +42,12 @@ LINKS=(
 
 # ---------- file symlinks into systemd user dir ----------
 FILE_LINKS=(
+  "systemd/swayidle.service:$SYSTEMD_HOME/swayidle.service"
 )
 
 # ---------- helpers that go into /usr/local/bin (need sudo) ----------
 BIN_LINKS=(
+  "edots/bin/edots:/usr/local/bin/edots"
   "edots/tool-manager/upkg:/usr/local/bin/upkg"
   "edots/tool-manager/utimer:/usr/local/bin/utimer"
   "edots/gtk-reload/gtk-reload:/usr/local/bin/gtk-reload"
@@ -176,10 +178,22 @@ cmd_install() {
   echo
   echo "── initial colour generation ──"
   if command -v python3 >/dev/null; then
-    local wp
-    wp="$(find "$HOME/Pictures/Wallpapers" -type f \
-          \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
-          2>/dev/null | head -n 1)"
+    local wp=""
+    # Prefer the wallpaper that is actually on screen: re-running sync.sh must
+    # not replace the user's current choice with some arbitrary file.
+    if command -v awww >/dev/null 2>&1; then
+      wp="$(awww query 2>/dev/null | sed -nE 's/.*currently displaying: (image|animated|video): //p' | head -n1 || true)"
+      [ -f "${wp:-}" ] || wp=""
+    fi
+    if [ -z "${wp:-}" ] && [ -f "$HOME/.config/quickshell/current-wallpaper.txt" ]; then
+      wp="$(head -n1 "$HOME/.config/quickshell/current-wallpaper.txt" 2>/dev/null || true)"
+      [ -f "${wp:-}" ] || wp=""
+    fi
+    if [ -z "${wp:-}" ]; then
+      wp="$(find "$HOME/Pictures/Wallpapers" -type f \
+            \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
+            -print -quit 2>/dev/null)"
+    fi
     if [ -n "${wp:-}" ]; then
       run python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
         || warn "wallcolors.py failed, run manually"
@@ -196,7 +210,7 @@ cmd_install() {
   echo
   info "done.  qs -p $CONFIG_HOME/quickshell/bar/shell.qml"
   echo
-  echo "Firefox chrome files need a manual step — see:  ./sync.sh firefox"
+  echo "Firefox chrome:  ./sync.sh firefox   (auto-detects your profile)"
 }
 
 cmd_status() {
@@ -218,6 +232,12 @@ cmd_unlink() {
 }
 
 cmd_firefox() {
+  local helper="$REPO_DIR/edots/bin/link-firefox-chrome.sh"
+  if [ -x "$helper" ]; then
+    "$helper" "$@"
+    return
+  fi
+
   cat <<'EOF'
 Firefox userChrome.css / userContent.css need to live in <profile>/chrome/.
 
@@ -240,7 +260,7 @@ case "${1:-}" in
   install)  cmd_install ;;
   status)   cmd_status ;;
   unlink)   cmd_unlink ;;
-  firefox)  cmd_firefox ;;
+  firefox)  shift; cmd_firefox "$@" ;;
   *)
     cat <<EOF
 Usage: $0 [--dry-run] {install|status|unlink|firefox}
@@ -248,7 +268,8 @@ Usage: $0 [--dry-run] {install|status|unlink|firefox}
   install   link every config from the repo into ~/.config (and systemd, bin)
   status    show what's currently linked
   unlink    remove symlinks this script created
-  firefox   print manual steps for Firefox chrome (needs profile path)
+  firefox   link the Firefox chrome files into the detected profile
+            (add --check to report without changing anything)
 EOF
     exit 1 ;;
 esac

@@ -22,6 +22,8 @@ Singleton {
                onFileChanged: reload(); onTextChanged: root._onFile("bar.json", text()) }
     FileView { path: root.base + "clock.json";      watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("clock.json", text()) }
+    FileView { path: root.base + "monitor.json";    watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("monitor.json", text()) }
     FileView { path: root.base + "widgets.json";    watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("widgets.json", text()) }
     FileView { path: root.base + "lockscreen.json"; watchChanges: true; printErrors: false
@@ -33,6 +35,7 @@ Singleton {
     FileView { id: wTheme;  path: root.base + "theme.json";      atomicWrites: true; printErrors: false }
     FileView { id: wBar;    path: root.base + "bar.json";        atomicWrites: true; printErrors: false }
     FileView { id: wClock;  path: root.base + "clock.json";      atomicWrites: true; printErrors: false }
+    FileView { id: wMonitor; path: root.base + "monitor.json";   atomicWrites: true; printErrors: false }
     FileView { id: wWidgets; path: root.base + "widgets.json";   atomicWrites: true; printErrors: false }
     FileView { id: wLock;   path: root.base + "lockscreen.json"; atomicWrites: true; printErrors: false }
     FileView { id: wColors; path: root.base + "colors.json";     atomicWrites: true; printErrors: false }
@@ -43,6 +46,7 @@ Singleton {
         case "theme.json":      return wTheme
         case "bar.json":        return wBar
         case "clock.json":      return wClock
+        case "monitor.json":    return wMonitor
         case "widgets.json":    return wWidgets
         case "lockscreen.json": return wLock
         case "colors.json":     return wColors

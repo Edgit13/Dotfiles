@@ -41,7 +41,9 @@ Scope {
         body = raw.body || ""
         urgency = raw.urgency === NotificationUrgency.Critical ? 2
                 : (raw.urgency === NotificationUrgency.Low ? 0 : 1)
-        expireSec = raw.expireTimeout
+        // D-Bus expire_timeout is in milliseconds; keep seconds here so
+        // _timeoutFor() can multiply by 1000 safely.
+        expireSec = raw.expireTimeout > 0 ? raw.expireTimeout / 1000 : 0
         transient_ = !!raw.transient
         const a = []
         for (let i = 0; i < raw.actions.length; i++)

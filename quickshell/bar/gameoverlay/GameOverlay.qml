@@ -15,7 +15,7 @@ PanelWindow {
 
     readonly property string pos: GameModeState.optOverlayPos
     readonly property bool onThisScreen: Quickshell.screens.length === 1 || MangoService.focusedMonitor === modelData.name
-    readonly property bool shouldShow: GameModeState.active && GameModeState.optOverlay && onThisScreen
+    readonly property bool shouldShow: GameModeState.active && GameModeState.optOverlay && onThisScreen && !ReliefState.hidden("gameoverlay")
 
     visible: shouldShow
     color: "transparent"

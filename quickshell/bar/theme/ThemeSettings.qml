@@ -26,13 +26,38 @@ Singleton {
     readonly property bool animations:         Settings.get("theme", "animations") && !_gm
     readonly property bool expressiveMotion:   Settings.get("theme", "expressiveMotion")
     readonly property real animationSpeed:     Settings.get("theme", "animationSpeed")
-    readonly property bool reduceMotion:       Settings.get("theme", "reduceMotion") || _gm
+    readonly property bool reduceMotion:       Settings.get("theme", "reduceMotion") || _gm || ReliefState.motion
     readonly property real uiScale:            Settings.get("theme", "uiScale")
 
     property bool systemDark: true
     readonly property bool resolvedDark: mode === "system" ? systemDark : mode === "dark"
 
     function set(key, value) { Settings.set("theme", key, value) }
+
+    // Appearance changes must reach GTK, terminals and KDE too. QML is already
+    // reactive; wallcolors.py rewrites the generated files and (optionally)
+    // restarts Nautilus, which only reads user CSS at startup.
+    Connections {
+        target: Settings
+        function onChanged(cat, key, value) {
+            if (cat !== "theme") return
+            if (key === "design") root._syncExternalDesign(String(value))
+            else if (key === "mode") root._syncExternalMode(String(value))
+        }
+    }
+
+    function _syncExternalDesign(design) {
+        const script = Quickshell.env("HOME") + "/.config/mango/scripts/wallcolors.py"
+        const args = design === "nothing" ? ["--nothing"] : ["--wallpaper"]
+        Quickshell.execDetached(["python3", script].concat(args).concat(["--no-shell-restart"]))
+    }
+
+    function _syncExternalMode(mode) {
+        if (mode === "dark")
+            Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-dark"])
+        else if (mode === "light")
+            Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-light"])
+    }
 
     // після старту (ThemeSwitch.armed) зміни design/mode проходять через анімований перехід
     Connections {

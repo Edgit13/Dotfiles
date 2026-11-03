@@ -1,3 +1,4 @@
+import "root:/states"
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -346,7 +347,7 @@ PanelWindow {
 
         // M3 elevation: tonal shadow under the container (level 3).
         RectangularShadow {
-            visible: !DockTheme.nothing
+            visible: !DockTheme.nothing && !ReliefState.effects
             anchors.fill: pillBg
             radius: pillBg.radius
             blur: 6

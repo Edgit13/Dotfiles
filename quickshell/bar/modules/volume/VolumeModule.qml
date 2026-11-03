@@ -10,6 +10,7 @@ BarRevealButton {
     id: root
 
     signal mixerRequested()
+    signal studioRequested()
 
     property var sink: Pipewire.defaultAudioSink
     readonly property bool ready: sink && sink.ready
@@ -26,10 +27,11 @@ BarRevealButton {
     label: muted ? "Mute" : (vol + "%")
     labelColor: muted ? Theme.color.outline : Theme.color.fgSurface
     verticalLabel: muted ? "✕" : String(vol)
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
 
     onClicked: mouse => {
         if (mouse.button === Qt.RightButton) root.mixerRequested()
+        else if (mouse.button === Qt.MiddleButton) root.studioRequested()
         else if (root.sink && root.sink.audio) root.sink.audio.muted = !root.sink.audio.muted
     }
     onWheeled: e => {

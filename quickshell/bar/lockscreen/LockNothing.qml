@@ -1,3 +1,4 @@
+import "root:/states"
 import QtQuick
 import QtQuick.Effects
 import Quickshell
@@ -80,7 +81,7 @@ Item {
             anchors.fill: parent
             source: wpImg
             visible: wpImg.status === Image.Ready
-            blurEnabled: true
+            blurEnabled: !ReliefState.effects
             blur: 0.55
             blurMax: 48
             saturation: -0.55            // у дусі Nothing — майже монохромне

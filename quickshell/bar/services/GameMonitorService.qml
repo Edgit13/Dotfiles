@@ -17,7 +17,11 @@ Singleton {
     function unsubscribe() { subscribers = Math.max(0, subscribers - 1) }
     onActiveChanged: active ? PerformanceService.subscribe() : PerformanceService.unsubscribe()
 
-    readonly property string script: Quickshell.env("HOME") + "/.config/quickshell/scripts/gamemon.sh"
+    // gamemon.sh шукаємо в ~/.config/quickshell/scripts та ~/.config/quickshell/bar/scripts
+    readonly property string launcher:
+        'for d in "$HOME/.config/quickshell/scripts" "$HOME/.config/quickshell/bar/scripts"; do ' +
+        '[ -f "$d/gamemon.sh" ] && exec bash "$d/gamemon.sh" "$1"; done; ' +
+        'echo "gpu=-1 gtemp=-1 mh=-1 mhfps=0 mhgpu=-1 mhcpu=-1"'
 
     // ---- налаштування ----
     readonly property string fpsSource: Settings.get("gamemode", "fpsSource") || "auto"
@@ -54,7 +58,7 @@ Singleton {
 
     Process {
         id: proc
-        command: ["bash", root.script, root.mhDir]
+        command: ["sh", "-c", root.launcher, "sh", root.mhDir]
         stdout: StdioCollector { onStreamFinished: root._parse(text) }
     }
     Timer {

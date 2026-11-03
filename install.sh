@@ -505,7 +505,7 @@ post_install() {
 
   # ───────────────────── tui-player venv ─────────────────────
   TUI_DIR="$REPO_DIR/edots/tui-player"
-  if [ -d "$TUI_DIR" ]; then
+  if [ "$DRY" != 1 ] && [ -d "$TUI_DIR" ]; then
     c_info "venv for tui-player..."
     python3 -m venv "$TUI_DIR/.venv" 2>/dev/null || { [ "$OS" = arch ] && sudo pacman -S --needed --noconfirm python; }
     if [ -d "$TUI_DIR/.venv" ]; then
@@ -528,7 +528,7 @@ post_install() {
   # ───────────────────── compile pam-auth for the lock screen ─────────────────────
   PAM_SRC="$REPO_DIR/quickshell/lockscreen/pam-auth.c"
   PAM_BIN="$REPO_DIR/quickshell/lockscreen/pam-auth"
-  if [ -f "$PAM_SRC" ]; then
+  if [ "$DRY" != 1 ] && [ -f "$PAM_SRC" ]; then
     c_info "Compiling lockscreen/pam-auth..."
     if cc -O2 -o "$PAM_BIN" "$PAM_SRC" -lpam; then
       chmod +x "$PAM_BIN"
@@ -548,27 +548,53 @@ post_install() {
   fi
 
   # ───────────────────── systemd user services ─────────────────────
-  mkdir -p "$HOME/.config/systemd/user"
-  systemctl --user daemon-reload || true
+  if [ "$DRY" = 1 ]; then
+    c_dry "enable + start swayidle.service"
+  else
+    mkdir -p "$HOME/.config/systemd/user"
+    systemctl --user daemon-reload || true
 
-  for unit in swayidle edots-lockscreen; do
-    if [ -f "$HOME/.config/systemd/user/$unit.service" ]; then
-      if systemctl --user enable --now "$unit.service"; then
-        c_ok "$unit.service enabled + started"
+    for unit in swayidle; do
+      if [ -f "$HOME/.config/systemd/user/$unit.service" ]; then
+        if systemctl --user enable --now "$unit.service"; then
+          c_ok "$unit.service enabled + started"
+        else
+          c_warn "$unit.service failed to enable"; FAILED+=("systemd:$unit")
+        fi
       else
-        c_warn "$unit.service failed to enable"; FAILED+=("systemd:$unit")
+        c_warn "$unit.service missing (sync.sh should have linked it)"
+        FAILED+=("systemd:missing:$unit")
       fi
-    else
-      c_warn "$unit.service missing (sync.sh should have linked it)"
-      FAILED+=("systemd:missing:$unit")
+    done
+
+    # Older installs shipped a separate logind-watch unit. Locking now goes
+    # through the bar shell's `ilock` IPC, so that unit only restart-loops.
+    if [ -f "$HOME/.config/systemd/user/edots-lockscreen.service" ]; then
+      c_warn "obsolete edots-lockscreen.service found — disable it:"
+      c_warn "  systemctl --user disable --now edots-lockscreen.service"
+      FAILED+=("systemd:obsolete:edots-lockscreen")
     fi
-  done
+  fi
 
   # ───────────────────── enable initial colour generation ─────────────────────
-  if command -v python3 >/dev/null; then
-    wp=$(find "$HOME/Pictures/Wallpapers" -type f \
-         \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
-         2>/dev/null | head -n 1)
+  if [ "$DRY" = 1 ]; then
+    c_dry "generate the palette from the first wallpaper"
+  elif command -v python3 >/dev/null; then
+    wp=""
+    # Keep the wallpaper that is currently displayed; never pick a random file.
+    if command -v awww >/dev/null 2>&1; then
+      wp="$(awww query 2>/dev/null | sed -nE 's/.*currently displaying: (image|animated|video): //p' | head -n1 || true)"
+      [ -f "${wp:-}" ] || wp=""
+    fi
+    if [ -z "${wp:-}" ] && [ -f "$HOME/.config/quickshell/current-wallpaper.txt" ]; then
+      wp="$(head -n1 "$HOME/.config/quickshell/current-wallpaper.txt" 2>/dev/null || true)"
+      [ -f "${wp:-}" ] || wp=""
+    fi
+    if [ -z "${wp:-}" ]; then
+      wp=$(find "$HOME/Pictures/Wallpapers" -type f \
+           \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
+           -print -quit 2>/dev/null)
+    fi
     if [ -n "${wp:-}" ]; then
       c_info "Generating palette from $wp ..."
       python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
@@ -576,6 +602,32 @@ post_install() {
         || { c_warn "wallcolors.py failed"; FAILED+=("wallcolors"); }
     else
       c_warn "no wallpapers found — palette not generated"
+    fi
+  fi
+
+  # ───────────────────── wallpaper colour index ─────────────────────
+  if [ "$DRY" != 1 ] && [ -f "$REPO_DIR/quickshell/scripts/wallpaper_color_index.py" ] \
+     && command -v python3 >/dev/null; then
+    if python3 -c 'import PIL' >/dev/null 2>&1; then
+      c_info "Indexing wallpapers by colour..."
+      python3 "$REPO_DIR/quickshell/scripts/wallpaper_color_index.py" >/dev/null 2>&1 \
+        && c_ok "wallpaper colour index built" \
+        || { c_warn "wallpaper colour index failed (non-fatal)"; FAILED+=("wallpaper-index"); }
+    else
+      c_warn "Pillow missing — wallpaper colour index skipped (python-pillow / pip install pillow)"
+    fi
+  fi
+
+  # ───────────────────── Firefox chrome files ─────────────────────
+  if [ "$DRY" != 1 ] && command -v firefox >/dev/null 2>&1; then
+    if [ -x "$REPO_DIR/edots/bin/link-firefox-chrome.sh" ]; then
+      c_info "Linking Firefox chrome into the detected profile..."
+      if "$REPO_DIR/edots/bin/link-firefox-chrome.sh"; then
+        c_ok "Firefox chrome linked (restart Firefox to apply)"
+      else
+        c_warn "Firefox chrome not linked — run: $REPO_DIR/edots/bin/link-firefox-chrome.sh"
+        FAILED+=("firefox-chrome")
+      fi
     fi
   fi
 }
@@ -816,8 +868,9 @@ echo
 echo "─────────────────────────────────────────────────────"
 echo "Next steps:"
 echo "  1. Relogin (so fish/swayidle/systemd pick up the environment)."
-echo "  2. Bar:      qs -p ~/.config/quickshell/bar/shell.qml"
-echo "  3. Settings: qs ipc call settings-launch toggle    (after the bar is up)"
-echo "  4. Lock:     bash ~/.config/quickshell/lockscreen/lock.sh"
-echo "  5. Idle/suspend: systemctl --user status swayidle.service"
+echo "  2. Bar:      edots reload        (or: qs -p ~/.config/quickshell/bar/shell.qml)"
+echo "  3. Settings: edots settings"
+echo "  4. Health:   edots doctor"
+echo "  5. Lock:     bash ~/.config/quickshell/lockscreen/lock.sh"
+echo "  6. Idle/suspend: systemctl --user status swayidle.service"
 echo "─────────────────────────────────────────────────────"

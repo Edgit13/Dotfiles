@@ -85,6 +85,33 @@ function describeSpawn(a) {
         if (IPC[calls[0]]) return { key: IPC[calls[0]], arg: "" }
         return { key: "ipc", arg: calls[0].replace(".", " ") }
     }
+    // edots CLI: binds now call `edots <command>`
+    var em = s.match(/\bedots\s+([a-z]+)(?:\s+([a-z]+))?/i)
+    if (em) {
+        var ec = em[1].toLowerCase(), ea = (em[2] || "").toLowerCase()
+        if (ec === "notifications") {
+            if (ea === "clear") return { key: "notifsClear", arg: "" }
+            if (ea === "dnd") return { key: "dnd", arg: "" }
+            return { key: "notifs", arg: "" }
+        }
+        if (ec === "osd") {
+            var OSD = {
+                volumeup: "volUp", volumedown: "volDown", volumemute: "mute",
+                brightnessup: "brightUp", brightnessdown: "brightDown"
+            }
+            if (OSD[ea]) return { key: OSD[ea], arg: "" }
+        }
+        var EDOTS = {
+            launcher: "launcher", wall: "wallpaper", wallpaper: "wallpaper",
+            clipboard: "clipboard", wifi: "wifi", mixer: "mixer", audio: "audio",
+            display: "display", media: "media", power: "power", binds: "binds",
+            settings: "settings", dashboard: "dashboard",
+            tasks: "tasks", screenshot: "screentool", snip: "screentool",
+            close: "closeAll", reload: "reloadShell", lock: "lock", suspend: "suspend"
+        }
+        if (EDOTS[ec]) return { key: EDOTS[ec], arg: "" }
+        return { key: "open", arg: "edots " + ec }
+    }
     if (/lock\.sh/.test(s)) return { key: "lock", arg: "" }
     if (/suspend\.sh/.test(s)) return { key: "suspend", arg: "" }
     if (/gamemode\.sh/.test(s)) return { key: "gamemode", arg: "" }

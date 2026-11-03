@@ -11,7 +11,7 @@ Singleton {
             file: "general.json",
             label: "section.general",
             fields: {
-                language:        { type: "enum", options: ["uk","en"], default: "uk", label: "Language" },
+                language:        { type: "enum", options: ["en","uk"], default: "en", label: "Language" },
                 userName:        { type: "str",  default: "", label: "Display name", desc: "Empty = system user" },
                 autoStart:       { type: "bool", default: false, label: "Open dashboard on login" },
                 notifEnabled:    { type: "bool", default: true,  label: "Desktop notifications" },
@@ -30,11 +30,13 @@ Singleton {
                 transition:       { type: "enum", options: ["off","fade","dots","scan"], default: "dots", label: "Theme transition", desc: "Animation when switching design or light/dark." },
                 dynamicColor:     { type: "bool", default: true, label: "Dynamic colors from wallpaper" },
                 accent:           { type: "color", default: "#74e7c8", label: "Custom accent" },
+                gtkReload:        { type: "enum", options: ["restart","notify","off"], default: "restart", label: "GTK apps after colour change", desc: "GTK4/libadwaita apps only read user CSS at startup. Restart Files (Nautilus) automatically, show a reminder, or do nothing." },
                 cornerStyle:      { type: "enum", options: ["material","expressive","rounded"], default: "expressive", label: "Corner style" },
                 uiScale:          { type: "num", min: 0.75, max: 1.5, step: 0.05, default: 1.0, label: "UI scale", suffix: "×" },
                 animations:       { type: "bool", default: true, label: "Animations" },
                 expressiveMotion: { type: "bool", default: true, label: "Expressive motion" },
                 reduceMotion:     { type: "bool", default: false, label: "Reduce motion" },
+                shadows:          { type: "bool", default: true,  label: "Shadows", desc: "Disable on weak GPUs (e.g. Intel UHD 620) if shadows flicker." },
                 animationSpeed:   { type: "num", min: 0.25, max: 3.0, step: 0.05, default: 1.0, label: "Animation speed", suffix: "×" }
             }
         },
@@ -52,6 +54,34 @@ Singleton {
                 pillEdgeGap:       { type: "num", min: 0, max: 32, step: 1, default: 8, label: "Pill: edge gap", suffix: "px" },
                 pillCloseOnEscape: { type: "bool", default: true, label: "Pill: close on Esc" },
                 perMonitor:  { type: "map", default: {}, hidden: true }
+            }
+        },
+        monitor: {
+            file: "monitor.json",
+            label: "section.monitor",
+            fields: {
+                enabled:       { type: "bool", default: true, label: "Process monitor", desc: "Lightweight separate process (procwatch.py)." },
+                scope:         { type: "enum", options: ["shell","system"], default: "shell", label: "Scope", desc: "shell = Quickshell and its children; system = all your processes." },
+                interval:      { type: "num", min: 1, max: 10, step: 0.5, default: 2, label: "Poll interval", suffix: " s" },
+                cpuLimit:      { type: "num", min: 20, max: 800, step: 10, default: 90, label: "CPU limit per process", suffix: "%", desc: "% of ONE core (200 = two cores)." },
+                memLimit:      { type: "num", min: 0, max: 32768, step: 128, default: 0, label: "Memory limit per process", suffix: " MB", desc: "0 = off." },
+                sustain:       { type: "num", min: 3, max: 120, step: 1, default: 15, label: "Exceeded for at least", suffix: " s" },
+                shellCpuLimit: { type: "num", min: 5, max: 400, step: 5, default: 25, label: "Quickshell CPU limit", suffix: "%" },
+                shellMemLimit: { type: "num", min: 0, max: 8192, step: 64, default: 0, label: "Quickshell memory limit", suffix: " MB", desc: "0 = off." },
+                overrides:     { type: "str", default: "", label: "Per-process limits", desc: "name:cpu:mem, ... e.g. firefox:150:4096, obs:200 (empty/0 = default)." },
+                notify:        { type: "bool", default: true, label: "Notify on exceed" },
+                cooldown:      { type: "num", min: 30, max: 1800, step: 30, default: 180, label: "Notification cooldown", suffix: " s" },
+                action:        { type: "enum", options: ["ask","freeze","none"], default: "ask", label: "On exceed", desc: "ask = notification with a Freeze button; freeze = freeze automatically; none = only report." },
+                freezeSeconds: { type: "num", min: 5, max: 600, step: 5, default: 30, label: "Freeze duration", suffix: " s", desc: "SIGSTOP, then automatic resume (SIGCONT)." },
+                protectSystem: { type: "bool", default: true, label: "Protect system processes", desc: "systemd, compositor, audio, network, login... are never frozen." },
+                whitelist:     { type: "str", default: "", label: "Whitelist", desc: "Comma-separated names (globs ok): never reported or frozen." },
+                pauseInGame:   { type: "bool", default: true, label: "Pause while game mode is on" },
+                reliefEnabled: { type: "bool", default: true, label: "Relief mode for Quickshell", desc: "If the shell exceeds its limit, offer to cut its load for a while." },
+                reliefAsk:     { type: "bool", default: true, label: "Ask before relief", desc: "Off = switch automatically." },
+                reliefMinutes: { type: "num", min: 1, max: 60, step: 1, default: 10, label: "Relief duration", suffix: " min" },
+                reliefMotion:  { type: "bool", default: true, label: "Relief: disable animations" },
+                reliefEffects: { type: "bool", default: true, label: "Relief: disable blur and shadows", desc: "Also applies to important parts (lock screen, bar)." },
+                reliefHide:    { type: "bool", default: true, label: "Relief: hide heaviest optional parts", desc: "Desktop widgets, dock, game overlay, heavy bar modules - the most expensive first." }
             }
         },
         widgets: {
@@ -99,7 +129,7 @@ Singleton {
             file: "bar.json",
             label: "section.modules",
             fields: {
-                order:         { type: "arr",  default: ["workspaces","clock","launcher","window","media","mixer","wifi","notifications","battery","power"], path: "modules.order", hidden: true },
+                order:         { type: "arr",  default: ["workspaces","clock","launcher","window","media","mixer","wifi","bluetooth","notifications","battery","power"], path: "modules.order", hidden: true },
                 workspaces:    { type: "bool", default: true, label: "Workspaces", path: "modules.workspaces" },
                 clock:         { type: "bool", default: true, label: "Clock", path: "modules.clock" },
                 launcher:      { type: "bool", default: true, label: "Launcher", path: "modules.launcher" },
@@ -108,6 +138,7 @@ Singleton {
                 resources: { type: "bool", default: true, label: "Resources", path: "modules.resources" },
                 mixer:         { type: "bool", default: true, label: "Volume", path: "modules.mixer" },
                 wifi:          { type: "bool", default: true, label: "Wi-Fi", path: "modules.wifi" },
+                bluetooth:     { type: "bool", default: true, label: "Bluetooth", path: "modules.bluetooth" },
                 notifications: { type: "bool", default: true, label: "Notifications", path: "modules.notifications" },
                 battery:       { type: "bool", default: true, label: "Battery", path: "modules.battery" },
                 power:         { type: "bool", default: true, label: "Power", path: "modules.power" }
@@ -133,7 +164,8 @@ Singleton {
                 dnd:        { type: "bool", default: false, label: "Do not disturb", desc: "No popups (critical ones still show).", path: "notif.dnd" },
                 toasts:     { type: "bool", default: true, label: "Popups", desc: "Cards that slide in at the screen edge.", path: "notif.toasts" },
                 bar:        { type: "bool", default: true, label: "Show in bar", desc: "Bell expands into the latest notification.", path: "notif.bar" },
-                position:   { type: "pos",  default: "top-right", label: "Popup position", desc: "Where popups appear; the center opens on the same side.", path: "notif.position" },
+                position:   { type: "pos",  default: "top-right", label: "Popup position", desc: "Where popups appear.", path: "notif.position" },
+                centerPosition: { type: "enum", options: ["same","top-left","top","top-right","left","center","right","bottom-left","bottom","bottom-right"], default: "same", label: "Notification center position", desc: "Where the notification center opens. \"Same as popups\" follows the popup position.", path: "notif.centerPosition" },
                 margin:     { type: "num", min: 8, max: 200, step: 4, default: 16, label: "Distance from edge", suffix: " px", path: "notif.margin" },
                 width:      { type: "num", min: 280, max: 560, step: 10, default: 380, label: "Width", suffix: " px", path: "notif.width" },
                 timeout:    { type: "num", min: 1, max: 30, step: 1, default: 6, label: "Timeout (normal)", suffix: " s", path: "notif.timeout" },
@@ -241,6 +273,7 @@ Singleton {
         { name: "page.colors",     icon: "format_paint",    cats: ["colors"] },
         { name: "page.bar",        icon: "space_dashboard", cats: ["bar", "modules"] },
         { name: "page.widgets",    icon: "widgets",         cats: ["widgets"] },
+        { name: "page.monitor",    icon: "monitor_heart",   cats: ["monitor"] },
         { name: "page.osd",        icon: "volume_up",       cats: ["osd"] },
         { name: "page.notif",      icon: "notifications",   cats: ["notif"] },
         { name: "page.layout",     icon: "view_quilt",      cats: ["layout"] },

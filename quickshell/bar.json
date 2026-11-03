@@ -1,47 +1,24 @@
 {
-  "bar": {
-    "position": "top",
-    "mode": "compact",
-    "elevation": 1,
-    "mainMonitor": ""
-  },
-  "perMonitor": {
-    "DP-1": {
-      "position": "bottom"
-    }
+  "notif": {
+    "position": "left",
+    "centerPosition": "same",
+    "dnd": false,
+    "width": 380
   },
   "mode": "expanded",
-  "elevation": 1,
-  "position": "top",
-  "mainMonitor": "HDMI-A-1",
-  "modules": {
-    "workspaces": true
+  "gamemode": {
+    "fpsSource": "auto",
+    "overlayTemps": true,
+    "overlayPos": "bottom-right",
+    "overlayFps": false,
+    "overlayScale": 1,
+    "overlayOpacity": 0.85
   },
   "osd": {
-    "position": "bottom-left",
-    "margin": 80,
-    "size": 1,
-    "duration": 2.3000000000000003
+    "position": "bottom",
+    "margin": 24,
+    "size": 0.75,
+    "duration": 2.4000000000000004
   },
-  "notif": {
-    "dnd": false,
-    "position": "right",
-    "margin": 20
-  },
-  "layout": {
-    "active": "dwindle"
-  },
-  "gamemode": {
-    "motion": true,
-    "overlayTemps": true,
-    "overlayPos": "bottom-right"
-  },
-  "record": {
-    "fps": 30,
-    "audio": "none"
-  },
-  "style": "full",
-  "pillEdgeGap": 3,
-  "openMode": "window",
-  "pillHover": false
+  "style": "full"
 }

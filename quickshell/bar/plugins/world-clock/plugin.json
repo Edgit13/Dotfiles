@@ -1,0 +1,20 @@
+{
+  "id": "world-clock",
+  "name": "World Clock",
+  "description": "Local time plus a few cities. Also available as a compact bar module.",
+  "version": "1.0.0",
+  "author": "Edots",
+  "icon": "public",
+  "defaultEnabled": false,
+  "surface": {
+    "qml": "WorldClock.qml",
+    "width": 520,
+    "height": 460,
+    "end": true,
+    "typing": false
+  },
+  "bar": {
+    "qml": "WorldClockBar.qml",
+    "position": "trailing"
+  }
+}

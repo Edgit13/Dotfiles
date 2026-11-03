@@ -48,6 +48,7 @@ __pycache__/
 # runtime-generated colors (matugen/wallcolors)
 quickshell/colors.json
 quickshell/current-wallpaper.txt
+quickshell/audio-studio.json
 quickshell/settings.json
 quickshell/tasks.json
 quickshell/active-preset
@@ -57,3 +58,12 @@ ghostty/ghostty-colors.conf
 swaync/colors.css
 rofi/colors.rasi
 kdeglobals
+
+# ==========================================================================
+# Build output — compiled artifacts do not belong in git
+# (they are the reason the repo pack grew past 300 MB)
+# ==========================================================================
+**/target/
+edots/edot-browser/build/
+edots/edot-browser/rust-adblock/target/
+edots/player/target/

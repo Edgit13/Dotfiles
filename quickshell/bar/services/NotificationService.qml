@@ -15,6 +15,11 @@ Singleton {
     readonly property bool toasts: Settings.get("notif", "toasts") !== false      // спливаючі вікна
     readonly property bool barLive: Settings.get("notif", "bar") !== false        // сповіщення прямо в барі
     readonly property string position: String(Settings.get("notif", "position") || "top-right")
+    // центр може стояти окремо ("same" = там само, де спливаючі вікна)
+    readonly property string centerPosition: {
+        const v = String(Settings.get("notif", "centerPosition") || "same")
+        return v === "same" ? position : v
+    }
     readonly property real margin: Number(Settings.get("notif", "margin") ?? 16)
     readonly property real cardWidth: Number(Settings.get("notif", "width") ?? 380)
     readonly property real timeoutNormal: Number(Settings.get("notif", "timeout") ?? 6)

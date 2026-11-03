@@ -1,3 +1,4 @@
+import "root:/states"
 import "root:/theme"
 import "root:/services"
 import Quickshell
@@ -13,7 +14,7 @@ PanelWindow {
     required property var modelData
     screen: modelData
 
-    visible: WidgetsConfig.enabled
+    visible: WidgetsConfig.enabled && !ReliefState.hidden("widgets")
              && (WidgetsConfig.monitor === "" || WidgetsConfig.monitor === (screen ? screen.name : ""))
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Bottom

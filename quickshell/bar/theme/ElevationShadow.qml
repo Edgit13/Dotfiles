@@ -1,3 +1,5 @@
+import "root:/states"
+import "root:/settings"
 import "root:/theme"
 import QtQuick
 import QtQuick.Effects
@@ -11,7 +13,7 @@ Item {
     property real level: 1
     property real radius: ThemeShapes.card
     property color color: ThemeElevation.surfaceFor(level)
-    property bool shadowVisible: level > 0.05
+    property bool shadowVisible: level > 0.05 && !ReliefState.effects && Settings.get("theme", "shadows")
     property alias content: caster   // фон-прямокутник (для border тощо)
 
     Rectangle {

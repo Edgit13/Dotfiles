@@ -1,3 +1,4 @@
+import "root:/states"
 import "root:/shell"
 import Quickshell
 import Quickshell.Io
@@ -80,7 +81,7 @@ Scope {
     }
 
     LazyLoader {
-        active: DockSettings.ready && DockSettings.enabled && root.stateVisible
+        active: DockSettings.ready && DockSettings.enabled && root.stateVisible && !ReliefState.hidden("dock")
                      && root.dockScreen !== null
         Instantiator {
             model: root.dockScreen ? [root.dockScreen] : []

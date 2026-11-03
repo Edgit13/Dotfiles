@@ -16,13 +16,13 @@ PanelWindow {
     readonly property bool atLeft: pos === "left" || pos.indexOf("-left") > 0
     readonly property bool atRight: pos === "right" || pos.indexOf("-right") > 0
 
-    readonly property real pad: Theme.components.dp(16)
-    readonly property real gap: Theme.components.dp(8)
+    readonly property real pad: Theme.components.dp(12)
+    readonly property real gap: Theme.components.dp(6)
     readonly property real edge: Math.max(0, Math.round(NotificationService.margin * Theme.space.k) - pad)
     readonly property real offX: atLeft ? -1 : (atRight ? 1 : 0)
 
     readonly property bool target: NotificationService.isPopupTarget(win.screen)
-    visible: target && NotificationService.toasts && !NotificationService.centerOpen && (NotificationService.popups.length > 0 || stack.height > 1)
+    visible: target && NotificationService.toasts && (NotificationService.popups.length > 0 || stack.height > 1)
 
     color: "transparent"
     exclusionMode: ExclusionMode.Ignore
@@ -51,8 +51,11 @@ PanelWindow {
             Item {
                 id: slot
                 required property var modelData
-                readonly property bool shown: NotificationService.popups.indexOf(modelData) >= 0
+                required property int index
+                readonly property bool shown: NotificationService.popups.indexOf(modelData) >= 0 && !leaving
+                readonly property int stagger: Math.min(index, 4) * 32
                 property bool entered: false
+                property bool leaving: false
                 Component.onCompleted: entered = true
 
                 width: stack.width
@@ -67,16 +70,27 @@ PanelWindow {
                     popup: true
                     y: win.gap / 2
                     opacity: (slot.entered && slot.shown) ? 1 : 0
+                    scale: (slot.entered && slot.shown) ? 1 : 0.94
                     transform: Translate {
                         x: (slot.entered && slot.shown) ? 0 : win.offX * Theme.components.dp(56)
                         y: (slot.entered && slot.shown) || win.offX !== 0 ? 0
                            : (win.atBottom ? 1 : -1) * Theme.components.dp(32)
-                        Behavior on x { MotionAnimation { role: (slot.entered && slot.shown) ? "move" : "exit" } }
-                        Behavior on y { MotionAnimation { role: (slot.entered && slot.shown) ? "move" : "exit" } }
+                        Behavior on x { MotionStagger { role: (slot.entered && slot.shown) ? "move" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
+                        Behavior on y { MotionStagger { role: (slot.entered && slot.shown) ? "move" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
                     }
-                    Behavior on opacity { MotionAnimation { role: (slot.entered && slot.shown) ? "enter" : "exit" } }
+                    Behavior on scale { MotionStagger { role: (slot.entered && slot.shown) ? "move" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
+                    Behavior on opacity { MotionStagger { role: (slot.entered && slot.shown) ? "enter" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
 
-                    onRemoved: NotificationService.dismiss(slot.modelData)
+                    onRemoved: {
+                        if (slot.leaving) return
+                        slot.leaving = true
+                        leaveTimer.start()
+                    }
+                    Timer {
+                        id: leaveTimer
+                        interval: ThemeMotion.duration("collapse") + 60
+                        onTriggered: NotificationService.dismiss(slot.modelData)
+                    }
                 }
             }
         }

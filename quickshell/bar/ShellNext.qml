@@ -23,6 +23,7 @@ ShellRoot {
         LayoutService.ensure()
         GameModeState.ensure()
         RecordService.ensure()
+        MonitorService.ensure()        // легкий процес-монітор (procwatch.py)
         TimerService.ensure()          // перечитати таймери utimer і заново запустити очікування після входу
     }
 
@@ -55,8 +56,14 @@ ShellRoot {
         function toggleClipboard(): void { ShellState.toggleSurface("clipboard") }
         function showMixer(): void   { ShellState.openSurface("mixer") }
         function toggleMixer(): void { ShellState.toggleSurface("mixer") }
+        function showAudio(): void   { ShellState.openSurface("audio") }
+        function toggleAudio(): void { ShellState.toggleSurface("audio") }
+        function showDisplay(): void   { ShellState.openSurface("display") }
+        function toggleDisplay(): void { ShellState.toggleSurface("display") }
         function showWifi(): void   { ShellState.openSurface("wifi") }
         function toggleWifi(): void { ShellState.toggleSurface("wifi") }
+        function showBluetooth(): void   { ShellState.openSurface("bluetooth") }
+        function toggleBluetooth(): void { ShellState.toggleSurface("bluetooth") }
         function showMedia(): void   { ShellState.openSurface("media") }
         function toggleMedia(): void { ShellState.toggleSurface("media") }
         function showPower(): void   { ShellState.openSurface("power") }
@@ -71,8 +78,35 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "audio"
+        function open(): void   { ShellState.openSurface("audio") }
+        function toggle(): void { ShellState.toggleSurface("audio") }
+        function close(): void  { if (ShellState.activeSurface === "audio") ShellState.closeSurfaces() }
+    }
+
+    IpcHandler {
+        target: "display"
+        function open(): void   { ShellState.openSurface("display") }
+        function toggle(): void { ShellState.toggleSurface("display") }
+        function close(): void  { if (ShellState.activeSurface === "display") ShellState.closeSurfaces() }
+        function revert(): void { DisplayService.revertNow() }
+        function keep(): void   { DisplayService.keepChanges() }
+        function apply(): void  { DisplayService.applyAll() }
+        function refresh(): void { DisplayService.refresh() }
+    }
+
+    IpcHandler {
         target: "launcher"
         function open(): void { ShellState.openSurface("launcher") }
+    }
+
+    IpcHandler {
+        target: "bluetooth"
+        function open(): void   { ShellState.openSurface("bluetooth") }
+        function toggle(): void { ShellState.toggleSurface("bluetooth") }
+        function close(): void  { if (ShellState.activeSurface === "bluetooth") ShellState.closeSurfaces() }
+        function togglePower(): void { BluetoothService.togglePower() }
+        function scan(): void   { BluetoothService.startScan() }
     }
 
     IpcHandler {
@@ -153,11 +187,24 @@ ShellRoot {
     // qs ipc call theme toggleDesign | setDesign nothing | toggleMode | setMode dark | setTransition dots
     IpcHandler {
         target: "theme"
-        function setDesign(name: string): void { Theme.set("design", name) }
-        function toggleDesign(): void { Theme.set("design", ThemeSettings.wantedDesign === "nothing" ? "material" : "nothing") }
+        function setDesign(name: string): void {
+            if (name !== "material" && name !== "nothing") return
+            Theme.set("design", name)
+        }
+        function toggleDesign(): void {
+            Theme.set("design", ThemeSettings.wantedDesign === "nothing" ? "material" : "nothing")
+        }
         function setMode(mode: string): void { Theme.set("mode", mode) }
         function toggleMode(): void { Theme.set("mode", ThemeSettings.wantedMode === "light" ? "dark" : "light") }
         function setTransition(style: string): void { Theme.set("transition", style) }
+    }
+
+    IpcHandler {
+        target: "monitor"
+        function relief(minutes: int): void { MonitorService.startRelief(minutes > 0 ? minutes : 0) }
+        function reliefStop(): void { ReliefState.stop() }
+        function scan(): void { MonitorService.startScan() }
+        function thawAll(): void { MonitorService.thawAll() }
     }
 
     // віджети робочого столу (Settings → Віджети); qs ipc call widgets toggle

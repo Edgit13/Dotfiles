@@ -18,6 +18,7 @@ Item {
     Component.onCompleted: PerformanceService.subscribe()
     Component.onDestruction: PerformanceService.unsubscribe()
 
+    property int tab: 0           // 0 — огляд, 1 — монітор процесів
     property var cpuHist: []
     property var ramHist: []
     Timer {
@@ -50,6 +51,18 @@ Item {
         ColumnLayout {
             id: col
             width: flick.width
+            spacing: Theme.space.md
+
+            MaterialSegmented {
+                options: [{ label: Lang.t("ui.res.tabOverview") }, { label: Lang.t("ui.res.tabMonitor") }]
+                selectedIndex: root.tab
+                onSelected: index => root.tab = index
+            }
+
+            ColumnLayout {
+            id: overview
+            Layout.fillWidth: true
+            visible: root.tab === 0
             spacing: Theme.space.md
 
             RowLayout {
@@ -250,6 +263,9 @@ Item {
                     }
                 }
             }
+            }
+
+            ProcessMonitorTab { visible: root.tab === 1 }
         }
     }
 }

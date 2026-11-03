@@ -1,21 +1,6 @@
 {
-  "appearance": {
-    "mode": "dark",
-    "dynamicColor": true,
-    "accent": "#74e7c8",
-    "cornerStyle": "expressive",
-    "uiScale": 1,
-    "fontFamily": "SF Pro Display"
-  },
-  "animations": true,
-  "animationSpeed": 1,
-  "mode": "dark",
-  "dynamicColor": true,
-  "accent": "#74e7c8",
-  "uiScale": 0.9500000000000001,
-  "cornerStyle": "expressive",
-  "expressiveMotion": true,
-  "reduceMotion": false,
   "design": "nothing",
-  "transition": "dots"
+  "uiScale": 0.9500000000000001,
+  "animationSpeed": 0.8500000000000001,
+  "gtkReload": "notify"
 }

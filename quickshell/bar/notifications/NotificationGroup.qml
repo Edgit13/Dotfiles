@@ -21,8 +21,8 @@ ColumnLayout {
     // ---- заголовок ----
     RowLayout {
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.space.sm
-        spacing: Theme.space.sm
+        Layout.leftMargin: Theme.space.xs
+        spacing: Theme.space.xs
 
         ThemedText {
             Layout.fillWidth: true
@@ -34,8 +34,8 @@ ColumnLayout {
         }
         Rectangle {
             visible: group.gItems.length > 1
-            implicitWidth: cnt.implicitWidth + Theme.space.md
-            implicitHeight: Theme.components.dp(20)
+            implicitWidth: cnt.implicitWidth + Theme.space.sm
+            implicitHeight: Theme.components.dp(18)
             radius: height / 2
             color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
             border.width: Theme.settings.nothing ? 1 : 0
@@ -73,14 +73,18 @@ ColumnLayout {
                 id: slot
                 required property var modelData
                 required property int index
-                readonly property bool shown: group.expanded || index === 0
+                readonly property bool shown: (group.expanded || index === 0) && !leaving
+                property bool leaving: false
                 readonly property int lastShown: group.expanded ? group.gItems.length - 1 : 0
+                readonly property int stagger: Math.min(index, 5) * 26
 
                 Layout.fillWidth: true
                 implicitHeight: shown ? card.implicitHeight : 0
                 visible: implicitHeight > 0.5
                 clip: true
+                scale: slot.shown ? 1 : 0.97
                 Behavior on implicitHeight { MotionAnimation { role: "morph" } }
+                Behavior on scale { MotionStagger { role: slot.shown ? "enter" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
 
                 NotificationCard {
                     id: card
@@ -89,8 +93,17 @@ ColumnLayout {
                     topR: slot.index === 0 ? Theme.shape.cardLarge : Theme.shape.listInner
                     bottomR: slot.index === slot.lastShown ? Theme.shape.cardLarge : Theme.shape.listInner
                     opacity: slot.shown ? 1 : 0
-                    Behavior on opacity { MotionAnimation { role: "fade" } }
-                    onRemoved: NotificationService.dismiss(slot.modelData)
+                    Behavior on opacity { MotionStagger { role: slot.shown ? "enter" : "exit"; delay: slot.shown ? slot.stagger : 0 } }
+                    onRemoved: {
+                        if (slot.leaving) return
+                        slot.leaving = true
+                        leaveTimer.start()
+                    }
+                    Timer {
+                        id: leaveTimer
+                        interval: ThemeMotion.duration("morph") + 60
+                        onTriggered: NotificationService.dismiss(slot.modelData)
+                    }
                 }
             }
         }
@@ -101,7 +114,12 @@ ColumnLayout {
             implicitHeight: (!group.expanded && group.gItems.length > 1) ? Theme.components.dp(12) : 0
             visible: implicitHeight > 0.5
             clip: true
+            opacity: group.expanded ? 0 : 1
+            scale: group.expanded ? 0.94 : 1
+            transformOrigin: Item.Top
             Behavior on implicitHeight { MotionAnimation { role: "morph" } }
+            Behavior on opacity { MotionAnimation { role: group.expanded ? "exit" : "enter" } }
+            Behavior on scale { MotionAnimation { role: group.expanded ? "exit" : "enter" } }
             Rectangle {
                 anchors.horizontalCenter: parent.horizontalCenter
                 y: Theme.components.dp(-8)

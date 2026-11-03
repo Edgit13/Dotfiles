@@ -8,9 +8,11 @@ import "root:/modules/record"
 import "root:/modules/launcher"
 import "root:/modules/window"
 import "root:/modules/clock"
+import "root:/modules/language"
 import "root:/modules/volume"
 import "root:/modules/network"
 import "root:/modules/battery"
+import "root:/modules/bluetooth"
 import "root:/modules/media"
 import "root:/modules/notifications"
 import "root:/modules/power"
@@ -58,12 +60,12 @@ PanelWindow {
 
     // панелі, що морфяться з пілла: [ширина, висота] (dashboard рахується окремо)
     readonly property var pillPanelSize: ({
-        wifi: [460, 440], mixer: [480, 420], media: [460, 320], power: [360, 290], launcher: [560, 520],
+        wifi: [460, 440], bluetooth: [460, 480], mixer: [480, 420], media: [460, 320], power: [360, 290], launcher: [560, 520],
         wallpaper: [620, 480], clipboard: [540, 480], binds: [700, 620], resources: [560, 620]
     })
-    readonly property var pillPanelIds: ["wifi", "mixer", "media", "power", "launcher", "wallpaper", "clipboard", "binds", "resources"]
+    readonly property var pillPanelIds: ["wifi", "bluetooth", "mixer", "audio", "media", "power", "launcher", "wallpaper", "clipboard", "binds", "resources"]
     readonly property var pillComponents: ({
-        dashboard: pDashboard, wifi: pWifi, mixer: pMixer, media: pMedia, power: pPower, launcher: pLauncher,
+        dashboard: pDashboard, wifi: pWifi, bluetooth: pBluetooth, mixer: pMixer, audio: pAudio, media: pMedia, power: pPower, launcher: pLauncher,
         wallpaper: pWallpaper, clipboard: pClipboard, binds: pBinds, resources: pResources
     })
     readonly property bool dashOpen: dashboardSurface.occupies
@@ -192,7 +194,7 @@ PanelWindow {
     Item {
         id: surface
         z: 2
-        
+
         // ВИПРАВЛЕНО: використовуємо ТІЛЬКИ opacity та enabled, без visible: false
         opacity: win.pill ? 0 : 1
         enabled: !win.pill
@@ -228,13 +230,13 @@ PanelWindow {
                 },
                 WindowModule {
                     monitor: win.monitorName; vertical: win.vertical; cross: win.cross
-                    enabledByConfig: BarConfig.moduleEnabled("window")
+                    enabledByConfig: BarConfig.moduleEnabled("window") && !ReliefState.hidden("barmodules")
                 },
                 BarGroup {
                     vertical: win.vertical
                     MediaModule {
                         vertical: win.vertical; cross: win.inner
-                        enabledByConfig: BarConfig.moduleEnabled("media")
+                        enabledByConfig: BarConfig.moduleEnabled("media") && !ReliefState.hidden("barmodules")
                         onMediaRequested: ShellState.toggleSurface("media", win.monitorName)
                     }
                 }
@@ -245,7 +247,7 @@ PanelWindow {
                     vertical: win.vertical
                     ResourcesModule {
                         vertical: win.vertical; cross: win.inner
-                        enabledByConfig: BarConfig.moduleEnabled("resources")
+                        enabledByConfig: BarConfig.moduleEnabled("resources") && !ReliefState.hidden("barmodules")
                         onResourcesRequested: ShellState.toggleSurface("resources", win.monitorName)
                     }
                 },
@@ -275,11 +277,17 @@ PanelWindow {
                         vertical: win.vertical; cross: win.inner
                         enabledByConfig: BarConfig.moduleEnabled("mixer")
                         onMixerRequested: ShellState.toggleSurface("mixer", win.monitorName)
+                        onStudioRequested: ShellState.toggleSurface("audio", win.monitorName)
                     }
                     NetworkModule {
                         vertical: win.vertical; cross: win.inner
                         enabledByConfig: BarConfig.moduleEnabled("wifi")
                         onWifiRequested: ShellState.toggleSurface("wifi", win.monitorName)
+                    }
+                    BluetoothModule {
+                        vertical: win.vertical; cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("bluetooth")
+                        onBluetoothRequested: ShellState.toggleSurface("bluetooth", win.monitorName)
                     }
                     BatteryModule {
                         vertical: win.vertical; cross: win.inner
@@ -288,6 +296,10 @@ PanelWindow {
                     NotificationModule {
                         vertical: win.vertical; cross: win.inner
                         enabledByConfig: BarConfig.moduleEnabled("notifications")
+                    }
+                    LanguageModule {
+                        vertical: win.vertical; cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("language")
                     }
                 },
                 PowerModule {
@@ -381,6 +393,11 @@ PanelWindow {
                 // з'являються лише під час запису / ігрового режиму; клік зупиняє
                 RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
                 GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                LanguageModule {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    enabledByConfig: BarConfig.moduleEnabled("language")
+                }
             }
         ]
 
@@ -399,7 +416,7 @@ PanelWindow {
                 WindowModule {
                     Layout.alignment: Qt.AlignVCenter
                     monitor: win.monitorName; cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("window")
+                    enabledByConfig: BarConfig.moduleEnabled("window") && !ReliefState.hidden("barmodules")
                 }
                 WorkspaceStrip {
                     Layout.alignment: Qt.AlignVCenter
@@ -415,13 +432,13 @@ PanelWindow {
                 ResourcesModule {
                     Layout.alignment: Qt.AlignVCenter
                     cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("resources")
+                    enabledByConfig: BarConfig.moduleEnabled("resources") && !ReliefState.hidden("barmodules")
                     onResourcesRequested: win.openPanel("resources")
                 }
                 MediaModule {
                     Layout.alignment: Qt.AlignVCenter
                     cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("media")
+                    enabledByConfig: BarConfig.moduleEnabled("media") && !ReliefState.hidden("barmodules")
                     onMediaRequested: win.openPanel("media")
                 }
                 VolumeModule {
@@ -429,12 +446,19 @@ PanelWindow {
                     cross: win.inner
                     enabledByConfig: BarConfig.moduleEnabled("mixer")
                     onMixerRequested: win.openPanel("mixer")
+                    onStudioRequested: win.openPanel("audio")
                 }
                 NetworkModule {
                     Layout.alignment: Qt.AlignVCenter
                     cross: win.inner
                     enabledByConfig: BarConfig.moduleEnabled("wifi")
                     onWifiRequested: win.openPanel("wifi")
+                }
+                BluetoothModule {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    enabledByConfig: BarConfig.moduleEnabled("bluetooth")
+                    onBluetoothRequested: win.openPanel("bluetooth")
                 }
                 BatteryModule {
                     Layout.alignment: Qt.AlignVCenter
@@ -443,6 +467,11 @@ PanelWindow {
                 }
                 RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
                 GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                LanguageModule {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    enabledByConfig: BarConfig.moduleEnabled("language")
+                }
                 PowerModule {
                     Layout.alignment: Qt.AlignVCenter
                     cross: win.inner
@@ -468,7 +497,9 @@ PanelWindow {
 
     Component { id: pDashboard; DashboardSurface { anchors.fill: parent; occupies: true; listenShell: false; hostMonitor: win.monitorName; revealDirection: win.position } }
     Component { id: pWifi; WifiSurface { anchors.fill: parent } }
+    Component { id: pBluetooth; BluetoothSurface { anchors.fill: parent } }
     Component { id: pMixer; MixerSurface { anchors.fill: parent } }
+    Component { id: pAudio; AudioStudioSurface { anchors.fill: parent } }
     Component { id: pMedia; MediaSurface { anchors.fill: parent } }
     Component { id: pPower; PowerSurface { anchors.fill: parent } }
     Component { id: pWallpaper; WallpaperSurface { anchors.fill: parent } }
