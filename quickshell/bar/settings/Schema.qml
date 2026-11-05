@@ -247,6 +247,17 @@ Singleton {
                 successFlash:   { type: "bool", default: true, label: "Success flash" }
             }
         },
+        session: {
+            file: "session.json",
+            label: "section.session",
+            fields: {
+                idleEnabled:      { type: "bool", default: true, label: "Idle timeouts", desc: "Lock the screen and turn the display off after inactivity. Locking before suspend stays on." },
+                lockMinutes:      { type: "num", min: 0, max: 120, step: 1, default: 5, label: "Lock screen after", suffix: " min", desc: "0 = never. The lock screen still appears before suspend." },
+                screenOffMinutes: { type: "num", min: 0, max: 120, step: 1, default: 10, label: "Turn display off after", suffix: " min", desc: "Requires wlopm (installed by install.sh). 0 = never." },
+                suspendMinutes:   { type: "num", min: 0, max: 240, step: 1, default: 0, label: "Suspend after", suffix: " min", desc: "0 = never. Suspending always locks first when the option below is on." },
+                lockOnSuspend:    { type: "bool", default: true, label: "Lock before suspend", desc: "Also used for lid-close and the Suspend action." }
+            }
+        },
         colors: {
             file: "colors.json",
             label: "section.colors",
@@ -267,21 +278,25 @@ Singleton {
         }
     })
 
+    // Сторінки згруповані за змістом. Порядок масиву = порядок у навігації;
+    // група змінюється лише між сусідніми сторінками.
     readonly property var pages: [
-        { name: "page.general",    icon: "tune",            cats: ["general"] },
-        { name: "page.appearance", icon: "palette",         cats: ["theme"] },
-        { name: "page.colors",     icon: "format_paint",    cats: ["colors"] },
-        { name: "page.bar",        icon: "space_dashboard", cats: ["bar", "modules"] },
-        { name: "page.widgets",    icon: "widgets",         cats: ["widgets"] },
-        { name: "page.monitor",    icon: "monitor_heart",   cats: ["monitor"] },
-        { name: "page.osd",        icon: "volume_up",       cats: ["osd"] },
-        { name: "page.notif",      icon: "notifications",   cats: ["notif"] },
-        { name: "page.layout",     icon: "view_quilt",      cats: ["layout"] },
-        { name: "page.gamemode",   icon: "sports_esports",  cats: ["gamemode"] },
-        { name: "page.record",     icon: "videocam",        cats: ["record"] },
-        { name: "page.lockscreen", icon: "lock",            cats: ["lockscreen"] },
-        { name: "page.clock",      icon: "schedule",        cats: ["clock"] },
-        { name: "page.wallpapers", icon: "wallpaper",       cats: [] },
-        { name: "page.about",      icon: "info",            cats: [] }
+        { name: "page.appearance", icon: "palette",         group: "group.personal", cats: ["theme"] },
+        { name: "page.colors",     icon: "format_paint",    group: "group.personal", cats: ["colors"] },
+        { name: "page.wallpapers", icon: "wallpaper",       group: "group.personal", cats: [] },
+        { name: "page.bar",        icon: "space_dashboard", group: "group.desktop",  cats: ["bar", "modules"] },
+        { name: "page.widgets",    icon: "widgets",         group: "group.desktop",  cats: ["widgets"] },
+        { name: "page.layout",     icon: "view_quilt",      group: "group.desktop",  cats: ["layout"] },
+        { name: "page.clock",      icon: "schedule",        group: "group.desktop",  cats: ["clock"] },
+        { name: "page.lockscreen", icon: "lock",            group: "group.desktop",  cats: ["lockscreen"] },
+        { name: "page.general",    icon: "tune",            group: "group.system",   cats: ["general"] },
+        { name: "page.session",    icon: "bedtime",         group: "group.system",   cats: ["session"] },
+        { name: "page.osd",        icon: "volume_up",       group: "group.system",   cats: ["osd"] },
+        { name: "page.notif",      icon: "notifications",   group: "group.system",   cats: ["notif"] },
+        { name: "page.monitor",    icon: "monitor_heart",   group: "group.system",   cats: ["monitor"] },
+        { name: "page.gamemode",   icon: "sports_esports",  group: "group.system",   cats: ["gamemode"] },
+        { name: "page.record",     icon: "videocam",        group: "group.system",   cats: ["record"] },
+        { name: "page.plugins",    icon: "extension",       group: "group.extras",   cats: [] },
+        { name: "page.about",      icon: "info",            group: "group.extras",   cats: [] }
     ]
 }

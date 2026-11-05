@@ -18,6 +18,7 @@ import "root:/modules/notifications"
 import "root:/modules/power"
 import "root:/surfaces"
 import "root:/states"
+import "root:/services"
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
@@ -59,11 +60,17 @@ PanelWindow {
     readonly property var morphModules: [dashboardSurface, pillSurface]
 
     // панелі, що морфяться з пілла: [ширина, висота] (dashboard рахується окремо)
-    readonly property var pillPanelSize: ({
-        wifi: [460, 440], bluetooth: [460, 480], mixer: [480, 420], media: [460, 320], power: [360, 290], launcher: [560, 520],
-        wallpaper: [620, 480], clipboard: [540, 480], binds: [700, 620], resources: [560, 620]
-    })
+    readonly property var pillPanelSize: {
+        const sizes = {
+            wifi: [460, 440], bluetooth: [460, 480], mixer: [480, 420], media: [460, 320], power: [360, 344], launcher: [560, 520],
+            wallpaper: [620, 480], clipboard: [540, 480], binds: [700, 620], resources: [560, 620]
+        }
+        for (const plugin of (PluginService.surfaces || []))
+            sizes["plugin:" + plugin.id] = [plugin.surface.w, plugin.surface.h]
+        return sizes
+    }
     readonly property var pillPanelIds: ["wifi", "bluetooth", "mixer", "audio", "media", "power", "launcher", "wallpaper", "clipboard", "binds", "resources"]
+        .concat((PluginService.surfaces || []).map(function (plugin) { return "plugin:" + plugin.id }))
     readonly property var pillComponents: ({
         dashboard: pDashboard, wifi: pWifi, bluetooth: pBluetooth, mixer: pMixer, audio: pAudio, media: pMedia, power: pPower, launcher: pLauncher,
         wallpaper: pWallpaper, clipboard: pClipboard, binds: pBinds, resources: pResources
@@ -239,6 +246,11 @@ PanelWindow {
                         enabledByConfig: BarConfig.moduleEnabled("media") && !ReliefState.hidden("barmodules")
                         onMediaRequested: ShellState.toggleSurface("media", win.monitorName)
                     }
+                },
+                PluginBarItems {
+                    position: "leading"
+                    vertical: win.vertical
+                    cross: win.inner
                 }
             ]
 
@@ -265,6 +277,11 @@ PanelWindow {
                         enabledByConfig: BarConfig.moduleEnabled("clock")
                         onClicked: ShellState.toggleDashboard(win.monitorName)
                     }
+                },
+                PluginBarItems {
+                    position: "center"
+                    vertical: win.vertical
+                    cross: win.inner
                 }
             ]
 
@@ -300,6 +317,11 @@ PanelWindow {
                     LanguageModule {
                         vertical: win.vertical; cross: win.inner
                         enabledByConfig: BarConfig.moduleEnabled("language")
+                    }
+                    PluginBarItems {
+                        position: "trailing"
+                        vertical: win.vertical
+                        cross: win.inner
                     }
                 },
                 PowerModule {
@@ -472,6 +494,12 @@ PanelWindow {
                     cross: win.inner
                     enabledByConfig: BarConfig.moduleEnabled("language")
                 }
+                PluginBarItems {
+                    position: "sorted"
+                    vertical: false
+                    cross: win.inner
+                    layoutAlignment: Qt.AlignVCenter
+                }
                 PowerModule {
                     Layout.alignment: Qt.AlignVCenter
                     cross: win.inner
@@ -489,7 +517,8 @@ PanelWindow {
                     active: pillSurface.activePanel !== ""
                     opacity: active ? 1 : 0
                     Behavior on opacity { MotionAnimation { role: "fade" } }
-                    sourceComponent: win.pillComponents[pillSurface.activePanel] || null
+                    sourceComponent: win.pillComponents[pillSurface.activePanel]
+                        || (pillSurface.activePanel.indexOf("plugin:") === 0 ? pPlugin : null)
                 }
             }
         ]
@@ -507,4 +536,12 @@ PanelWindow {
     Component { id: pBinds; BindsSurface { anchors.fill: parent } }
     Component { id: pResources; ResourcesSurface { anchors.fill: parent; onRequestClose: pillSurface.collapse() } }
     Component { id: pLauncher; LauncherSurface { anchors.fill: parent; onAppLaunched: pillSurface.collapse() } }
+    Component { id: pPlugin
+        Loader {
+            anchors.fill: parent
+            active: true
+            source: pillSurface.activePanel.indexOf("plugin:") === 0
+                ? PluginService.surfaceQml(pillSurface.activePanel.substring(7)) : ""
+        }
+    }
 }

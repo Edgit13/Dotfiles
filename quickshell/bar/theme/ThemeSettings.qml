@@ -34,25 +34,49 @@ Singleton {
 
     function set(key, value) { Settings.set("theme", key, value) }
 
-    // Appearance changes must reach GTK, terminals and KDE too. QML is already
-    // reactive; wallcolors.py rewrites the generated files and (optionally)
-    // restarts Nautilus, which only reads user CSS at startup.
+    // Appearance changes must reach GTK, terminals, Firefox, rofi and KDE too.
+    // QML is already reactive; wallcolors.py --sync re-applies the palette for
+    // the current design/mode/accent (and restarts Nautilus when needed).
+    // Debounced because the colour picker emits many updates while dragging.
+    Process {
+        id: externalSyncProc
+        command: ["python3", Quickshell.env("HOME") + "/.config/mango/scripts/wallcolors.py",
+                  "--sync", "--no-shell-restart"]
+        property bool pending: false
+        onExited: {
+            if (pending) {
+                pending = false
+                running = true
+            }
+        }
+    }
+
+    Timer {
+        id: externalSync
+        interval: 500
+        repeat: false
+        onTriggered: {
+            // Never spawn a second writer while one is running: remember that
+            // settings moved on, then re-run once with the latest values.
+            if (externalSyncProc.running) externalSyncProc.pending = true
+            else externalSyncProc.running = true
+        }
+    }
+
     Connections {
         target: Settings
         function onChanged(cat, key, value) {
             if (cat !== "theme") return
-            if (key === "design") root._syncExternalDesign(String(value))
-            else if (key === "mode") root._syncExternalMode(String(value))
+            if (key === "accent" || key === "design" || key === "dynamicColor") {
+                externalSync.restart()
+            } else if (key === "mode") {
+                root._applyGnomeMode(String(value))
+                externalSync.restart()
+            }
         }
     }
 
-    function _syncExternalDesign(design) {
-        const script = Quickshell.env("HOME") + "/.config/mango/scripts/wallcolors.py"
-        const args = design === "nothing" ? ["--nothing"] : ["--wallpaper"]
-        Quickshell.execDetached(["python3", script].concat(args).concat(["--no-shell-restart"]))
-    }
-
-    function _syncExternalMode(mode) {
+    function _applyGnomeMode(mode) {
         if (mode === "dark")
             Quickshell.execDetached(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-dark"])
         else if (mode === "light")

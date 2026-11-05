@@ -30,6 +30,10 @@ Singleton {
     property bool saving: false
     property string error: ""
 
+    // Settings (and other UI) cannot import root:/shell without a cycle, so
+    // they ask the service to open a panel and ShellNext does the navigation.
+    signal openSurfaceRequested(string id)
+
     // Enabled plugins that can open a surface / add a bar item.
     readonly property var surfaces: (plugins || []).filter(function (p) {
         return p && p.enabled && p.surface
@@ -40,6 +44,18 @@ Singleton {
     readonly property var barPluginsSorted: (barPlugins || []).slice().sort(function (a, b) {
         return (a.bar.order || 0) - (b.bar.order || 0)
             || String(a.name).localeCompare(String(b.name))
+    })
+    // Direct properties for Repeater models: QML reliably re-evaluates a
+    // binding that reads a property, while reads hidden inside a function are
+    // not consistently captured by every Qt version.
+    readonly property var leadingBarPlugins: (barPluginsSorted || []).filter(function (p) {
+        return p.bar && p.bar.position === "leading"
+    })
+    readonly property var centerBarPlugins: (barPluginsSorted || []).filter(function (p) {
+        return p.bar && p.bar.position === "center"
+    })
+    readonly property var trailingBarPlugins: (barPluginsSorted || []).filter(function (p) {
+        return p.bar && p.bar.position === "trailing"
     })
 
     property string _listOut: ""
@@ -59,6 +75,11 @@ Singleton {
 
     function hasSurface(id) {
         return !!surfaceFor(id)
+    }
+
+    function requestOpen(plugin) {
+        if (!plugin || !plugin.enabled || !plugin.surface) return
+        openSurfaceRequested(plugin.id)
     }
 
     function surfaceQml(id) {

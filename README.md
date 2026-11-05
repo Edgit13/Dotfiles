@@ -1,21 +1,28 @@
 <div align="center">
 
+<img src="screenshots/banner.png" alt="Nook — a MangoWM + Quickshell rice" width="100%">
+
+<br>
+
+<img src="screenshots/icon.png" alt="Edots" width="96">
+
 # Edots
 
-**A minimal, functional rice for [MangoWM](https://github.com/DreamMaoMao/mangowc) + [Quickshell](https://quickshell.org)**
-Two interchangeable designs — **Material 3 Expressive** and **Nothing** — one palette generated from your wallpaper.
+**A MangoWM + Quickshell rice by [Nook](https://github.com/Edgit13)**
+Two designs — **Material 3 Expressive** and **Nothing** — one palette from your wallpaper.
 
-![Wayland](https://img.shields.io/badge/Wayland-MangoWM-7aa2f7?style=flat-square)
-![Quickshell](https://img.shields.io/badge/Shell-Quickshell-9ece6a?style=flat-square)
-![Design](https://img.shields.io/badge/Design-Material%203%20%7C%20Nothing-e0af68?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
+[![Wayland](https://img.shields.io/badge/Wayland-MangoWM-6B4EBA?style=flat-square&logo=wayland&logoColor=F4F1EA)](https://github.com/DreamMaoMao/mangowc)
+[![Quickshell](https://img.shields.io/badge/Shell-Quickshell-E01B24?style=flat-square)](https://quickshell.org)
+[![Design](https://img.shields.io/badge/Design-Material%203%20%7C%20Nothing-CDBFF0?style=flat-square&labelColor=1a1a1a)](https://github.com/Edgit13/Dotfiles)
+[![License](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Edgit13/Dotfiles?style=flat-square&color=6B4EBA&label=stars)](https://github.com/Edgit13/Dotfiles/stargazers)
 
-[Features](#-features) · [Gallery](#-gallery) · [Installation](#-installation) · [Keybinds](#-keybinds) · [IPC](#-ipc) · [Colors](#-color-system) · [Structure](#-structure)
+[**Features**](#-features) · [**Gallery**](#-gallery) · [**Install**](#-installation) · [**Keybinds**](#-keybinds) · [**IPC**](#-ipc) · [**Colors**](#-color-system) · [**Structure**](#-structure)
 
 <br>
 
 <img src="screenshots/Bar-Material.png" alt="Edots bar — Material 3" width="100%">
-<sub><b>Material 3</b> — tonal pills, dynamic colors from the wallpaper</sub>
+<sub><b>Material 3 Expressive</b> — tonal pills, dynamic colours from the wallpaper</sub>
 
 <br><br>
 
@@ -26,23 +33,46 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 
 <br>
 
+> **Edots** is a complete Wayland desktop, not just a bar. A morphing Quickshell
+> shell, a Material 3 dashboard, a custom lock screen and a palette engine that
+> paints the whole system — GTK, terminals, Firefox, rofi, KDE — from a single
+> wallpaper. Switch to **Nothing** and it becomes monochrome, dotted, quiet.
+
+<br>
+
 ## ✨ Features
 
-|  |  |
+### 🖥 The shell
+
+| | |
 |---|---|
 | 🎨 **Two designs** | Material 3 Expressive and Nothing, light and dark. Switch live in *Settings → Appearance* or with `ipc call theme toggleDesign`. Animated transitions: `fade`, `dots`, `scan` or off. |
 | 🧩 **Modular bar** | Per-monitor bar on any edge (top / bottom / left / right). Launcher, active window, media player, resources, workspaces, clock, volume, network, battery, notifications, power. Modules can be toggled from Settings. |
 | 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi, media, power menu, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
 | 🔎 **Advanced launcher** | One field for everything: apps, files (`/report`), a calculator (`2+2`), emoji (`:fire`) and shell commands (`>htop`). <kbd>Enter</kbd> opens or copies, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs a command in the terminal. |
-| 🎚 **Audio studio** | 10-band equalizer with presets and preamp, global bypass and RNNoise microphone noise reduction. Runs through EasyEffects; <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> or `edots audio`. |
-| 🖥 **Display centre** | Per-output on/off, resolution, refresh rate, scale, rotation, arrangement and adaptive sync. Every apply asks you to keep it, otherwise the previous layout returns after 18 seconds. <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> or `edots display`. |
-| 🖼 **Wallpapers by color** | The picker sorts your wallpapers into Blue / Purple / Pink / Red / Orange / Yellow / Green / Cyan / Monochrome. Files are never touched; the index lives in `~/.cache/quickshell`. |
 | 📊 **Dashboard** | Overview, Media, Performance, Workspaces and Planner tabs. Weather (Open-Meteo, no API key), CPU / RAM / disk, brightness, volume, calendar with timed tasks. |
 | 🔔 **Own notification daemon** | Popups, a notification center and Do Not Disturb. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
-| 🔊 **OSD** | Volume and brightness overlays on the active monitor. |
-| ⚙️ **Settings app** | A separate window with live controls, search across every option and a ↺ reset on each control. Persisted to `~/.config/quickshell/*.json`. |
 | 🔒 **Lock screen** | Quickshell + PAM lock screen: ken burns, parallax, floating shapes, power buttons. Lock-then-suspend through logind. |
+| 🌙 **Idle & session** | Lock, display-off and suspend timers in *Settings → System → Session*; `swayidle` is regenerated live. `edots session` shows the effective timers and exposes lock / suspend / logout / reboot / poweroff. |
+| 🔊 **OSD** | Volume and brightness overlays on the active monitor. |
 | 🎮 **Game mode** | One switch turns off blur, animations and effects; the bar shows a pill while it is active. |
+
+### 🎚 Sound
+
+| | |
+|---|---|
+| 🎛 **Mixer** | Master volume, per-application streams, output and input devices, ports and mute — all in one surface. |
+| 🎚 **Audio studio** | 10-band equalizer with presets and preamp, global bypass and RNNoise microphone noise reduction. Runs through EasyEffects; <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> or `edots audio`. |
+| 🔀 **Per-app audio** | Mixer → Apps shows every playing app with its own volume, mute and output device. Pin an app to a sink and Edots remembers it for next time; unpin to follow the system default. `edots app-audio` manages the same routes from the terminal. |
+
+### 🧰 System & workflow
+
+| | |
+|---|---|
+| 🖥 **Display centre** | Per-output on/off, resolution, refresh rate, scale, rotation, arrangement and adaptive sync. Every apply asks you to keep it, otherwise the previous layout returns after 18 seconds. <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> or `edots display`. |
+| 🖼 **Wallpapers by color** | The picker sorts your wallpapers into Blue / Purple / Pink / Red / Orange / Yellow / Green / Cyan / Monochrome. Files are never touched; the index lives in `~/.cache/quickshell`. |
+| ⚙️ **Settings app** | A separate window with live controls, search across every option and a ↺ reset on each control. Persisted to `~/.config/quickshell/*.json`. |
+| 🧱 **Plugins** | Drop a folder with `plugin.json` into `~/.config/edots/plugins` to add a surface panel, a bar module, or both. Enable, inspect and reload them in *Settings → Plugins*; `edots plugin` lists them and `edots plugin open <id>` opens a panel. The bundled World Clock is a complete example. |
 | 🎥 **Screen tools** | Screenshot / OCR / recording overlay (QuickSnip) with a recording indicator in the bar. |
 | 🌍 **Languages** | English and Ukrainian UI. |
 | 🩺 **`edots` CLI** | One command for every surface — `edots launcher`, `edots settings`, `edots reload` — and `edots doctor` checks packages, fonts, links and services. |
@@ -51,26 +81,31 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 
 ## 🖼 Gallery
 
-### Dashboard
-
-<div align="center">
-  <img src="screenshots/Dashboard.gif" alt="Edots dashboard" width="560">
-  <br>
-  <sub>Press <kbd>Super</kbd>+<kbd>D</kbd> · <a href="screenshots/Dashboard.mp4">watch the full video (MP4)</a></sub>
-</div>
+<table>
+  <tr>
+    <td width="58%" align="center" valign="top">
+      <img src="screenshots/Dashboard.gif" alt="Edots dashboard" width="100%">
+      <br><b>Dashboard</b>
+      <br><sub><kbd>Super</kbd>+<kbd>D</kbd> — weather, resources, media and a planner</sub>
+    </td>
+    <td width="42%" align="center" valign="top">
+      <img src="screenshots/Settings.png" alt="Settings" width="100%">
+      <br><b>Settings</b>
+      <br><sub><kbd>Super</kbd>+<kbd>A</kbd> — every option, live and searchable</sub>
+    </td>
+  </tr>
+</table>
 
 <br>
 
-### Launcher & wallpapers
-
 <table>
   <tr>
-    <td width="50%" valign="top" align="center">
+    <td width="50%" align="center" valign="top">
       <img src="screenshots/Launcher.png" alt="Launcher">
       <br><b>Launcher</b>
       <br><sub><kbd>Super</kbd>+<kbd>Space</kbd> — fuzzy search over desktop entries, icons and categories</sub>
     </td>
-    <td width="50%" valign="top" align="center">
+    <td width="50%" align="center" valign="top">
       <img src="screenshots/WallSelector.png" alt="Wallpaper selector">
       <br><b>Wallpaper selector</b>
       <br><sub><kbd>Super</kbd>+<kbd>C</kbd> — filter by dominant color; picking one recolors the whole system</sub>
@@ -80,16 +115,14 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 
 <br>
 
-### Network & notifications
-
 <table>
   <tr>
-    <td width="60%" valign="top" align="center">
+    <td width="60%" align="center" valign="top">
       <img src="screenshots/WiFiSelector.png" alt="Wi-Fi selector" width="420">
       <br><b>Wi-Fi</b>
       <br><sub><kbd>Super</kbd>+<kbd>W</kbd> — connect, disconnect, signal strength and security at a glance</sub>
     </td>
-    <td width="40%" valign="top" align="center">
+    <td width="40%" align="center" valign="top">
       <img src="screenshots/Notifications.png" alt="Notification center" width="240">
       <br><b>Notification center</b>
       <br><sub>History, Do Not Disturb, critical ones always get through</sub>
@@ -97,14 +130,8 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
   </tr>
 </table>
 
-<br>
-
-### Settings
-
 <div align="center">
-  <img src="screenshots/Settings.png" alt="Settings" width="760">
-  <br>
-  <sub><kbd>Super</kbd>+<kbd>A</kbd> — General · Appearance · Colors · Bar · OSD · Notifications · Windows · Game mode · Screen recording · Lock screen · Clock</sub>
+  <sub><a href="screenshots/Dashboard.mp4">▶ watch the dashboard video (MP4)</a></sub>
 </div>
 
 <br>
@@ -122,14 +149,14 @@ Two interchangeable designs — **Material 3 Expressive** and **Nothing** — on
 ## 🚀 Installation
 
 ```sh
-git clone https://github.com/Edgit13/Edots-rice ~/Dotfiles
+git clone https://github.com/Edgit13/Dotfiles ~/Dotfiles
 cd ~/Dotfiles && ./install.sh
 # log out and back in so fish / swayidle / systemd pick up the environment
 ```
 
 What `install.sh` does:
 
-1. Clones the repo and `Edot-Wallpapers` (into `~/Pictures/Wallpapers`).
+1. Clones the repo and `Rice-Wallpapers` (into `~/Pictures/Wallpapers`).
 2. Installs packages from pacman and the AUR (`yay` is bootstrapped automatically).
 3. Installs Google Sans Flex.
 4. Runs `./sync.sh install` to symlink configs into `~/.config` and install the `edots` command.
@@ -242,6 +269,11 @@ edots dashboard
 edots tasks
 edots screenshot         # stop, to end a recording
 edots notifications      # clear, dnd
+edots app-audio          # apps, volumes, saved output routes; ui|sinks|route|forget|apply
+edots app-audio ui       # open Mixer → Apps
+edots plugin             # list plugins; open|enable|disable|toggle|reload|folder|path
+edots plugin open world-clock
+edots plugin enable world-clock
 edots osd volumeUp       # volumeDown, volumeMute, brightnessUp, brightnessDown
 edots theme toggleDesign # Material <-> Nothing
 edots theme setMode dark # or: light, toggleMode
@@ -259,7 +291,60 @@ qs -p ~/.config/quickshell/bar/shell.qml ipc call dashboard toggle
 
 Available raw targets include `pill` (`toggleLauncher`, `toggleWallpaper`, `toggleClipboard`,
 `toggleMixer`, `toggleAudio`, `toggleWifi`, `toggleMedia`, `togglePower`, `toggleBinds`, `toggleResources`, `close`),
-`audio`, `dashboard`, `tasks`, `settingsapp`, `screentool`, `notifications`, `osd` and `theme`.
+`audio`, `display`, `plugins`, `dashboard`, `tasks`, `settingsapp`, `screentool`, `notifications`, `osd` and `theme`.
+
+<br>
+
+## 🎛 Per-app audio
+
+**Mixer → Apps** lists every playing application with its own volume, mute and
+output device. Pick an output once and the app is pinned there; the next stream
+from the same application is moved to that sink automatically.
+
+```sh
+edots app-audio                        # apps, volumes and saved routes
+edots app-audio ui                     # open Mixer → Apps
+edots app-audio sinks                  # list playback devices
+edots app-audio route firefox "JBL Tune 720BT"
+edots app-audio forget firefox         # follow the system default
+edots app-audio apply                  # re-apply saved routes now
+```
+
+Routes are keyed by application id (falling back to the process binary), so
+they survive restarts and changing stream indexes, and live in
+`~/.config/quickshell/per-app-audio.json`. WirePlumber still handles per-app
+volume restoration; Edots only adds explicit output pins.
+
+<br>
+
+## 🧱 Plugins
+
+A plugin is a folder with a `plugin.json` manifest. It may contribute a surface
+panel, a bar module, or both:
+
+```
+~/.config/edots/plugins/my-plugin/
+├── plugin.json
+├── MySurface.qml
+└── MyBar.qml
+```
+
+Enable it in **Settings → Plugins**, or from the CLI:
+
+```sh
+edots plugin                  # list plugins and state
+edots plugin enable my-plugin
+edots plugin open my-plugin   # open its panel
+edots plugin reload           # rescan after adding a folder
+edots plugin folder           # open ~/.config/edots/plugins
+```
+
+Plugin QML can use `import qs.theme`, `qs.shell`, `qs.services` and
+`qs.modules.common`, so it looks native in both Material and Nothing. Bundled
+examples live in `quickshell/bar/plugins/`; the World Clock shows a surface and
+a bar module. See [quickshell/bar/plugins/README.md](quickshell/bar/plugins/README.md)
+for the manifest reference. Plugins are trusted QML with your user rights —
+there is no sandbox.
 
 <br>
 
@@ -279,9 +364,28 @@ One palette, many consumers. `wallcolors.py` (matugen plus custom HSL rules) wri
 | `~/.config/rofi/colors.rasi` | rofi |
 | `~/.config/fish/fish-colors.fish` | fish |
 | `~/.config/kdeglobals` | Qt / KDE |
+| `~/.config/mango/colors-wallpaper{,-light}.json` | cached wallpaper palettes (dark / light) |
 
 Change the wallpaper and **everything** updates live — Quickshell, GTK, kitty and fish repaint without a restart.
-The **Nothing** design uses its own fixed monochrome palette and ignores wallpaper colors.
+Both **light** and **dark** palettes are generated once and cached, so switching the color mode is instant.
+
+The **Nothing** design uses its own fixed monochrome palette (with separate light and dark
+variants) and ignores wallpaper colors.
+
+### Theme control
+
+Settings → Appearance (or the CLI) keeps the whole desktop in sync. Changing the design,
+color mode, accent or *Dynamic colors* triggers a debounced `wallcolors.py --sync`, which
+rewrites GTK, terminals, Firefox, rofi, KDE and Nautilus from the current palette.
+
+```bash
+edots theme              # design, mode, accent and applied palette
+edots theme sync         # repaint externals from the current settings
+edots theme setMode light
+edots theme toggleDesign # Material <-> Nothing
+```
+
+`mode: system` follows the GNOME `color-scheme` setting; explicit `light` / `dark` wins.
 
 <br>
 
@@ -300,9 +404,10 @@ quickshell/bar/               # the shell
 ├── notifications/            # popups + notification center
 ├── osd/  dock/  screentool/  # overlays, dock, capture & recording
 ├── lockscreen/               # lock screen, PAM helper, logind hooks
-├── services/                 # Mango, Wi-Fi, media, weather, performance, notifications, …
+├── services/                 # Mango, Wi-Fi, media, weather, performance, notifications, plugins, …
 ├── settings/                 # settings app (pages, controls, schema, i18n)
-├── scripts/                  # gamemode.sh, wallpaper_color_index.py
+├── plugins/                  # bundled plugin examples + plugin.json reference
+├── scripts/                  # gamemode.sh, wallpaper_color_index.py, audioinfo.py, plugins.py, displayctl.py
 └── tools/                    # mango-probe.sh
 
 mango/                        # MangoWM config (binds, rules, animations, swayidle, scripts)
@@ -318,6 +423,12 @@ install.sh  sync.sh           # bootstrap and symlink manager
 
 See [nix/README.md](nix/README.md) — modules for NixOS + home-manager (mango flake, quickshell, capture stack).
 
-## 📄 License
+<br>
 
-MIT
+<div align="center">
+
+**Made by [Nook](https://github.com/Edgit13) · MIT**
+
+<sub>If Edots made your desktop nicer, a ⭐ helps.</sub>
+
+</div>

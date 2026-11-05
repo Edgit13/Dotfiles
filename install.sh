@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# install.sh — повний бутстрап Edots-rice.
+# install.sh — повний бутстрап Dotfiles.
 #
 # Adaptive to the OS:
 #   * NixOS                  -> validate nix/ flake, print integration steps,
@@ -11,10 +11,10 @@
 #     at the end as "install manually" instead of aborting.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/Edgit13/Edots-rice/master/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Edgit13/Dotfiles/master/install.sh | bash
 #   curl -fsSL .../install.sh | bash -s -- --quickstart
 #   # or:
-#   git clone https://github.com/Edgit13/Edots-rice.git ~/Dotfiles
+#   git clone https://github.com/Edgit13/Dotfiles.git ~/Dotfiles
 #   cd ~/Dotfiles && ./install.sh
 #
 # Flags:
@@ -30,7 +30,7 @@
 #
 set -uo pipefail
 
-REPO_URL="https://github.com/Edgit13/Edots-rice.git"
+REPO_URL="https://github.com/Edgit13/Dotfiles.git"
 REPO_DIR="${EDOTS_DIR:-$HOME/Dotfiles}"
 
 # ── Flags ──
@@ -171,7 +171,7 @@ do_restore() {
 [ "$RESTORE" = 1 ] && { do_restore; exit $?; }
 
 # ───────────────────── wallpapers (shared across OSes) ─────────────────────
-WALLPAPERS_REPO="https://github.com/Edgit13/Edot-Wallpapers.git"
+WALLPAPERS_REPO="https://github.com/Edgit13/Rice-Wallpapers.git"
 WALLPAPERS_DIR="$HOME/Pictures/Wallpapers"
 
 echo
@@ -649,7 +649,7 @@ install_arch() {
     power-profiles-daemon wireplumber pipewire pipewire-pulse pipewire-alsa
     upower
     # Wayland utils
-    wl-clipboard brightnessctl iproute2 iputils slurp grim wf-recorder
+    wl-clipboard brightnessctl wlopm iproute2 iputils slurp grim wf-recorder
     imagemagick
     # Apps
     alacritty ghostty kitty nautilus dolphin firefox

@@ -3,7 +3,7 @@
 A minimal and functional **MangoWM** + **Quickshell** config.
 **[Українська версія](README.md)**
 
-![Edots](screenshots/preview.png)
+<img src="../../screenshots/banner.png" alt="Nook rice for MangoWM + Quickshell" width="100%">
 
 ## Features
 
@@ -44,8 +44,8 @@ Quickshell (with Io/Wayland/Services/Networking), MangoWM, SF Pro Display/SF Mon
 ## Installation
 
 ```sh
-git clone https://github.com/Edgit13/Edots-rice ~/Edots-rice
-cd ~/Edots-rice && ./install.sh   # or ./sync.sh to re-sync
+git clone https://github.com/Edgit13/Dotfiles ~/Dotfiles
+cd ~/Dotfiles && ./install.sh   # or ./sync.sh to re-sync
 qs -p ~/.config/quickshell/bar/shell.qml
 ```
 

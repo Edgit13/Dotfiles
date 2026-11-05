@@ -15,6 +15,46 @@ Item {
 
     readonly property real navItemH: Theme.components.buttonM
     readonly property real navGap: Theme.space.xxs
+    readonly property real navHeaderH: Theme.components.dp(30)
+
+    // Групи навігації: сторінки не змінюють свої індекси, а лише порядок.
+    // Модель додає заголовки груп і рахує точні y-позиції, щоб індикатор
+    // активної сторінки рухався правильно.
+    readonly property var navModel: {
+        const items = []
+        let y = 0
+        let group = ""
+        for (let i = 0; i < Schema.pages.length; i++) {
+            const page = Schema.pages[i]
+            if (page.group !== group) {
+                group = page.group
+                if (i > 0) y += Theme.space.sm
+                items.push({ header: true, group: group, index: -1, y: y, height: app.navHeaderH })
+                y += app.navHeaderH
+            }
+            items.push({ header: false, page: page, index: i, y: y, height: app.navItemH })
+            y += app.navItemH + app.navGap
+        }
+        return { items: items, height: y + Theme.space.sm }
+    }
+
+    readonly property real activeNavY: {
+        const entries = app.navModel.items
+        for (let i = 0; i < entries.length; i++)
+            if (!entries[i].header && entries[i].index === app.currentIndex)
+                return entries[i].y
+        return 0
+    }
+
+    function pageIndex(name: string): int {
+        for (let i = 0; i < Schema.pages.length; i++)
+            if (Schema.pages[i].name === name) return i
+        return -1
+    }
+
+    readonly property int pluginsPageIndex: pageIndex("page.plugins")
+    readonly property int wallpapersPageIndex: pageIndex("page.wallpapers")
+    readonly property int aboutPageIndex: pageIndex("page.about")
 
     onCurrentIndexChanged: {
         pageIn.restart()
@@ -23,7 +63,7 @@ Item {
 
     function ensureNavVisible(idx: int): void {
         if (!navFlick) return
-        const itemY = idx * (app.navItemH + app.navGap)
+        const itemY = app.activeNavY
         const itemH = app.navItemH
         if (itemY < navFlick.contentY) {
             navFlick.contentY = Math.max(0, itemY)
@@ -60,7 +100,7 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     contentWidth: width
-                    contentHeight: navColWrap.implicitHeight
+                    contentHeight: app.navModel.height
                     boundsBehavior: Flickable.StopAtBounds
 
                     WheelHandler {
@@ -76,7 +116,7 @@ Item {
                     Item {
                         id: navColWrap
                         width: navFlick.width
-                        implicitHeight: navCol.implicitHeight + Theme.space.sm
+                        implicitHeight: app.navModel.height
 
                         // індикатор активної сторінки: їде між пунктами
                         Rectangle {
@@ -88,7 +128,7 @@ Item {
                                                           : Theme.color.secondaryContainer
                             border.width: Theme.settings.nothing ? 1 : 0
                             border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
-                            y: app.currentIndex * (app.navItemH + app.navGap)
+                            y: app.activeNavY
                             Behavior on y { MotionAnimation { role: "move" } }
 
                             Rectangle {
@@ -100,28 +140,44 @@ Item {
                             }
                         }
 
-                        ColumnLayout {
-                            id: navCol
-                            width: parent.width
-                            spacing: app.navGap
+                        Repeater {
+                            model: app.navModel.items
 
-                            Repeater {
-                                model: Schema.pages
+                            Item {
+                                id: navEntry
+                                required property var modelData
+                                width: navColWrap.width
+                                height: modelData.height
+                                y: modelData.y
+
+                                // ── group caption ──
+                                ThemedText {
+                                    visible: navEntry.modelData.header
+                                    anchors {
+                                        left: parent.left
+                                        right: parent.right
+                                        bottom: parent.bottom
+                                        leftMargin: Theme.space.lg
+                                        bottomMargin: Theme.space.xxs
+                                    }
+                                    text: navEntry.modelData.header ? Lang.t(navEntry.modelData.group).toUpperCase() : ""
+                                    style: Theme.type.labelSmall
+                                    emphasized: true
+                                    color: Theme.color.outline
+                                    font.letterSpacing: 1.2 * Theme.space.k
+                                }
+
+                                // ── page row ──
                                 Item {
-                                    id: navItem
-                                    required property var modelData
-                                    required property int index
-                                    readonly property bool active: app.currentIndex === index
-
-                                    Layout.fillWidth: true
-                                    implicitHeight: app.navItemH
+                                    anchors.fill: parent
+                                    visible: !navEntry.modelData.header
 
                                     Rectangle {
                                         anchors.fill: parent
                                         radius: Theme.shape.navItem
                                         color: Theme.color.fgSurface
                                         opacity: navMa.pressed ? Theme.components.statePressed
-                                               : (navMa.containsMouse && !navItem.active) ? Theme.components.stateHover : 0
+                                               : (navMa.containsMouse && navEntry.modelData.index !== app.currentIndex) ? Theme.components.stateHover : 0
                                         Behavior on opacity { MotionAnimation { role: "hover" } }
                                     }
 
@@ -131,17 +187,21 @@ Item {
                                         anchors.rightMargin: Theme.space.lg
                                         spacing: Theme.space.md
                                         Text {
-                                            text: navItem.modelData.icon
-                                            color: navItem.active ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer) : Theme.color.fgSurfaceVariant
+                                            text: navEntry.modelData.page ? navEntry.modelData.page.icon : ""
+                                            color: navEntry.modelData.index === app.currentIndex
+                                                   ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer)
+                                                   : Theme.color.fgSurfaceVariant
                                             font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
                                             Behavior on color { MotionColorAnimation { role: "stateChange" } }
                                         }
                                         ThemedText {
                                             Layout.fillWidth: true
-                                            text: Lang.t(navItem.modelData.name)
+                                            text: navEntry.modelData.page ? Lang.t(navEntry.modelData.page.name) : ""
                                             style: Theme.type.labelLarge
-                                            emphasized: navItem.active
-                                            color: navItem.active ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer) : Theme.color.fgSurface
+                                            emphasized: navEntry.modelData.index === app.currentIndex
+                                            color: navEntry.modelData.index === app.currentIndex
+                                                   ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer)
+                                                   : Theme.color.fgSurface
                                             Behavior on color { MotionColorAnimation { role: "stateChange" } }
                                         }
                                     }
@@ -151,7 +211,7 @@ Item {
                                         anchors.fill: parent
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
-                                        onClicked: app.currentIndex = navItem.index
+                                        onClicked: app.currentIndex = navEntry.modelData.index
                                     }
                                 }
                             }
@@ -326,11 +386,18 @@ Item {
                         }
                     }
 
+                    // ───────── Plugins ─────────
+                    PagePlugins {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: visible ? Math.max(560, flick.height - Theme.space.xl * 2) : 0
+                        visible: app.currentIndex === app.pluginsPageIndex
+                    }
+
                     // ───────── Wallpapers color categorization ─────────
                     Item {
                         Layout.fillWidth: true
                         implicitHeight: visible ? Math.max(520, flick.height - Theme.space.xl * 2) : 0
-                        visible: app.currentIndex === Schema.pages.length - 2
+                        visible: app.currentIndex === app.wallpapersPageIndex
                         PageWallpapers { anchors.fill: parent }
                     }
 
@@ -338,7 +405,7 @@ Item {
                     ColumnLayout {
                         id: aboutPage
                         Layout.fillWidth: true
-                        visible: app.currentIndex === Schema.pages.length - 1
+                        visible: app.currentIndex === app.aboutPageIndex
                         spacing: Theme.space.lg
 
                         ThemedText {
@@ -692,8 +759,8 @@ Item {
                                         icon: "code",
                                         title: Lang.t("about.github"),
                                         desc: Lang.t("about.githubDesc"),
-                                        url: "https://github.com/Edgit13/Edots-rice",
-                                        displayUrl: "github.com/Edgit13/Edots-rice",
+                                        url: "https://github.com/Edgit13/Dotfiles",
+                                        displayUrl: "github.com/Edgit13/Dotfiles",
                                         accent: Theme.color.secondary,
                                         container: Theme.color.secondaryContainer,
                                         fgContainer: Theme.color.fgSecondaryContainer
@@ -702,8 +769,8 @@ Item {
                                         icon: "wallpaper",
                                         title: Lang.t("about.wallpapers"),
                                         desc: Lang.t("about.wallpapersDesc"),
-                                        url: "https://github.com/Edgit13/Edot-Wallpapers",
-                                        displayUrl: "github.com/Edgit13/Edot-Wallpapers",
+                                        url: "https://github.com/Edgit13/Rice-Wallpapers",
+                                        displayUrl: "github.com/Edgit13/Rice-Wallpapers",
                                         accent: Theme.color.tertiary,
                                         container: Theme.color.tertiaryContainer,
                                         fgContainer: Theme.color.fgTertiaryContainer

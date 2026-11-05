@@ -68,9 +68,9 @@ cat <<EOF
 History rewritten.
 
 git-filter-repo removes the 'origin' remote. To publish the slim history:
-  git remote add origin https://github.com/Edgit13/Edots-rice.git
+  git remote add origin https://github.com/Edgit13/Dotfiles.git
   git push --force-with-lease origin master
 
 Restore the old repo from the bundle if needed:
-  git clone $BUNDLE Edots-rice-restore
+  git clone $BUNDLE Dotfiles-restore
 EOF

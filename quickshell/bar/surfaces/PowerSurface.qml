@@ -84,6 +84,11 @@ ColumnLayout {
         iconColor: Colors.accent
     }
     PowerRow {
+        glyph: "bedtime"; label: Lang.t("lock.suspend")
+        command: "python3 $HOME/.config/quickshell/bar/scripts/sessionidle.py suspend"
+        iconColor: Colors.grey2
+    }
+    PowerRow {
         glyph: "\ue9ba"; label: Lang.t("lock.logout")
         command: "loginctl terminate-user $USER"
     }

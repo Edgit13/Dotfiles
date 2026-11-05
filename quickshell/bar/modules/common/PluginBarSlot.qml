@@ -7,16 +7,14 @@ import QtQuick
 Loader {
     id: root
 
-    required property var plugin
+    property var plugin: null
     property bool vertical: false
     property real cross: 0
 
     active: !!plugin
     source: active ? PluginService.barQml(plugin) : ""
 
-    visible: active && status === Loader.Ready && item && item.visible !== false
-    implicitWidth: item ? item.implicitWidth : 0
-    implicitHeight: item ? item.implicitHeight : 0
+    visible: active && status === Loader.Ready
 
     function applyHostProperties() {
         if (!item) return
@@ -24,7 +22,12 @@ Loader {
         if (item.cross !== undefined) item.cross = root.cross
     }
 
-    onLoaded: applyHostProperties()
+    onLoaded: {
+        // Loader copies its own visible state onto the item when it is created,
+        // and the delegate may be created before the slot becomes active.
+        if (item && !item.visible) item.visible = true
+        applyHostProperties()
+    }
     onVerticalChanged: applyHostProperties()
     onCrossChanged: applyHostProperties()
     onStatusChanged: {

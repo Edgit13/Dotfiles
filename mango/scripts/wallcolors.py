@@ -2,6 +2,7 @@
 import argparse
 import configparser
 import colorsys
+import fcntl
 import json
 import logging
 import os
@@ -18,6 +19,7 @@ CONFIG = HOME / ".config"
 MANGO_DIR = CONFIG / "mango"
 MANGO_COLORS_JSON = MANGO_DIR / "colors.json"
 WALLPAPER_PALETTE_JSON = MANGO_DIR / "colors-wallpaper.json"
+WALLPAPER_PALETTE_LIGHT_JSON = MANGO_DIR / "colors-wallpaper-light.json"
 NOTHING_PALETTE_JSON = MANGO_DIR / "colors-nothing.json"
 WALLCOLORS_MODE_FILE = MANGO_DIR / "wallcolors-mode"
 MANGO_SWAYLOCK_COLORS = MANGO_DIR / "swaylock" / "colors.conf"
@@ -35,6 +37,8 @@ GTK3_COLORS_CSS = CONFIG / "gtk-3.0" / "gtk-colors.css"
 FISH_COLORS_FISH = CONFIG / "fish" / "fish-colors.fish"
 FIREFOX_COLORS_CSS = CONFIG / "firefox-colors.css"
 KDEGLOBALS = CONFIG / "kdeglobals"
+RUNTIME_DIR = Path(os.environ.get("XDG_RUNTIME_DIR") or "/tmp")
+THEME_LOCK = RUNTIME_DIR / "edots-wallcolors.lock"
 
 KDE_COLOR_SCHEME = HOME / ".local/share/color-schemes/Edots-Wallpaper.colors"
 LOG_FILE = HOME / "wallcolours.log"
@@ -47,10 +51,10 @@ logging.basicConfig(
 )
 
 
-def get_matugen_colors(image_path: str):
+def get_matugen_colors(image_path: str, scheme: str = "dark"):
     try:
         result = subprocess.run(
-            ["matugen", "image", image_path, "-m", "dark", "--json", "hex", "--quiet", "--source-color-index", "0"],
+            ["matugen", "image", image_path, "-m", scheme, "--json", "hex", "--quiet", "--source-color-index", "0"],
             capture_output=True,
             text=True,
             timeout=15,
@@ -201,30 +205,60 @@ def sync_gnome_appearance(palette: dict):
         logging.warning("could not sync GNOME accent: %s", exc)
 
 
-def build_palette(source_hex: str) -> dict:
+def build_palette(source_hex: str, dark: bool = True) -> dict:
     h, l, s = hex_to_hls(source_hex)
     bg_hue = h
     bg_sat = min(s, 0.45)
     ui_sat = max(s, 0.50)
-    return {
-        "bg0": hls_to_hex(bg_hue, 0.04, bg_sat),
-        "bg1": hls_to_hex(bg_hue, 0.07, bg_sat),
-        "bg2": hls_to_hex(bg_hue, 0.11, bg_sat),
-        "bg3": hls_to_hex(bg_hue, 0.15, bg_sat),
-        "bg4": hls_to_hex(bg_hue, 0.20, bg_sat),
-        "fg": hls_to_hex(bg_hue, 0.88, min(s, 0.20)),
-        "accent": hls_to_hex(h, max(l, 0.65), max(s, 0.70)),
-        "red": hls_to_hex((h - 0.05) % 1.0, 0.65, ui_sat),
-        "orange": hls_to_hex((h + 0.05) % 1.0, 0.70, ui_sat),
-        "yellow": hls_to_hex((h + 0.15) % 1.0, 0.70, ui_sat),
-        "green": hls_to_hex((h + 0.35) % 1.0, 0.65, ui_sat),
-        "aqua": hls_to_hex((h + 0.45) % 1.0, 0.55, ui_sat),
-        "blue": hls_to_hex((h + 0.55) % 1.0, 0.65, ui_sat),
-        "purple": hls_to_hex((h + 0.75) % 1.0, 0.75, ui_sat),
-        "grey0": hls_to_hex(bg_hue, 0.20, bg_sat),
-        "grey1": hls_to_hex(bg_hue, 0.35, bg_sat),
-        "grey2": hls_to_hex(bg_hue, 0.70, bg_sat),
-    }
+
+    if dark:
+        palette = {
+            "bg0": hls_to_hex(bg_hue, 0.04, bg_sat),
+            "bg1": hls_to_hex(bg_hue, 0.07, bg_sat),
+            "bg2": hls_to_hex(bg_hue, 0.11, bg_sat),
+            "bg3": hls_to_hex(bg_hue, 0.15, bg_sat),
+            "bg4": hls_to_hex(bg_hue, 0.20, bg_sat),
+            "fg": hls_to_hex(bg_hue, 0.88, min(s, 0.20)),
+            "accent": hls_to_hex(h, max(l, 0.65), max(s, 0.70)),
+            "red": hls_to_hex((h - 0.05) % 1.0, 0.65, ui_sat),
+            "orange": hls_to_hex((h + 0.05) % 1.0, 0.70, ui_sat),
+            "yellow": hls_to_hex((h + 0.15) % 1.0, 0.70, ui_sat),
+            "green": hls_to_hex((h + 0.35) % 1.0, 0.65, ui_sat),
+            "aqua": hls_to_hex((h + 0.45) % 1.0, 0.55, ui_sat),
+            "blue": hls_to_hex((h + 0.55) % 1.0, 0.65, ui_sat),
+            "purple": hls_to_hex((h + 0.75) % 1.0, 0.75, ui_sat),
+            "grey0": hls_to_hex(bg_hue, 0.20, bg_sat),
+            "grey1": hls_to_hex(bg_hue, 0.35, bg_sat),
+            "grey2": hls_to_hex(bg_hue, 0.70, bg_sat),
+        }
+    else:
+        # Light surfaces keep a hint of the wallpaper hue, while accents are
+        # darkened enough to stay readable on white.
+        light_sat = min(s, 0.14)
+        palette = {
+            "bg0": hls_to_hex(bg_hue, 0.97, min(light_sat, 0.08)),
+            "bg1": hls_to_hex(bg_hue, 0.95, light_sat),
+            "bg2": hls_to_hex(bg_hue, 0.92, light_sat),
+            "bg3": hls_to_hex(bg_hue, 0.89, light_sat),
+            "bg4": hls_to_hex(bg_hue, 0.85, light_sat),
+            "fg": hls_to_hex(bg_hue, 0.13, min(s, 0.18)),
+            "accent": hls_to_hex(h, 0.42, max(s, 0.68)),
+            "red": hls_to_hex((h - 0.05) % 1.0, 0.45, ui_sat),
+            "orange": hls_to_hex((h + 0.05) % 1.0, 0.46, ui_sat),
+            "yellow": hls_to_hex((h + 0.15) % 1.0, 0.42, ui_sat),
+            "green": hls_to_hex((h + 0.35) % 1.0, 0.38, ui_sat),
+            "aqua": hls_to_hex((h + 0.45) % 1.0, 0.40, ui_sat),
+            "blue": hls_to_hex((h + 0.55) % 1.0, 0.45, ui_sat),
+            "purple": hls_to_hex((h + 0.75) % 1.0, 0.45, ui_sat),
+            "grey0": hls_to_hex(bg_hue, 0.70, light_sat),
+            "grey1": hls_to_hex(bg_hue, 0.52, light_sat),
+            "grey2": hls_to_hex(bg_hue, 0.30, light_sat),
+        }
+
+    # ThemeColors.qml uses `primary` as the seed when it rebuilds its own
+    # scheme; without it light mode would fall back to the Settings accent.
+    palette["primary"] = palette["accent"]
+    return palette
 
 
 def write_dock_colors(palette: dict):
@@ -621,40 +655,70 @@ shadeSortColumn=true
     write(KDE_COLOR_SCHEME, content)
 
 
-def nothing_palette() -> dict:
+def nothing_palette(dark: bool = True) -> dict:
     """Fixed Nothing-inspired palette, independent of the current wallpaper."""
-    p = {
-        "bg0": "#000000", "bg1": "#0A0A0A", "bg2": "#121212",
-        "bg3": "#1C1C1C", "bg4": "#2B2B2B", "fg": "#FFFFFF",
-        "accent": "#D71921", "red": "#D71921", "orange": "#F07858",
-        "yellow": "#F2B84B", "green": "#8FD694", "aqua": "#C4C4C4",
-        "blue": "#A3A3A3", "purple": "#D6D6D6", "grey0": "#333333",
-        "grey1": "#777777", "grey2": "#BDBDBD", "theme": "nothing",
-        # Material 3 roles, in the snake_case format consumed by ThemeColors.qml.
-        "primary": "#FFFFFF", "on_primary": "#000000",
-        "primary_container": "#262626", "on_primary_container": "#FFFFFF",
-        "secondary": "#C4C4C4", "on_secondary": "#000000",
-        "secondary_container": "#1A1A1A", "on_secondary_container": "#E6E6E6",
+    if dark:
+        return {
+            "bg0": "#000000", "bg1": "#0A0A0A", "bg2": "#121212",
+            "bg3": "#1C1C1C", "bg4": "#2B2B2B", "fg": "#FFFFFF",
+            "accent": "#D71921", "red": "#D71921", "orange": "#F07858",
+            "yellow": "#F2B84B", "green": "#8FD694", "aqua": "#35C7C0",
+            "blue": "#4C8DFF", "purple": "#B18CFF", "grey0": "#333333",
+            "grey1": "#777777", "grey2": "#BDBDBD", "theme": "nothing",
+            # Material 3 roles, in the snake_case format consumed by ThemeColors.qml.
+            "primary": "#FFFFFF", "on_primary": "#000000",
+            "primary_container": "#262626", "on_primary_container": "#FFFFFF",
+            "secondary": "#C4C4C4", "on_secondary": "#000000",
+            "secondary_container": "#1A1A1A", "on_secondary_container": "#E6E6E6",
+            "tertiary": "#D71921", "on_tertiary": "#FFFFFF",
+            "tertiary_container": "#3A0D10", "on_tertiary_container": "#FFB3B6",
+            "error": "#D71921", "on_error": "#FFFFFF",
+            "error_container": "#3A0D10", "on_error_container": "#FFB3B6",
+            "success": "#8FD694", "on_success": "#000000",
+            "success_container": "#14301A", "on_success_container": "#C6F0C9",
+            "warning": "#F2B84B", "on_warning": "#000000",
+            "warning_container": "#3A2B08", "on_warning_container": "#FFE2A8",
+            "surface": "#000000", "on_surface": "#FFFFFF",
+            "surface_variant": "#1C1C1C", "on_surface_variant": "#A3A3A3",
+            "surface_dim": "#000000", "surface_bright": "#2A2A2A",
+            "surface_container_lowest": "#000000", "surface_container_low": "#0B0B0B",
+            "surface_container": "#121212", "surface_container_high": "#1A1A1A",
+            "surface_container_highest": "#242424", "outline": "#5C5C5C",
+            "outline_variant": "#2B2B2B", "inverse_surface": "#FFFFFF",
+            "inverse_on_surface": "#000000", "inverse_primary": "#000000",
+            "surface_tint": "#FFFFFF", "shadow": "#000000", "scrim": "#000000",
+            "md3": True,
+        }
+    return {
+        "bg0": "#F2F2F2", "bg1": "#F8F8F8", "bg2": "#EFEFEF",
+        "bg3": "#E8E8E8", "bg4": "#E0E0E0", "fg": "#0A0A0A",
+        "accent": "#D71921", "red": "#D71921", "orange": "#B45309",
+        "yellow": "#9A6200", "green": "#1F7A2C", "aqua": "#0F7C75",
+        "blue": "#2F62C4", "purple": "#7A4BB5", "grey0": "#8A8A8A",
+        "grey1": "#5E5E5E", "grey2": "#4A4A4A", "theme": "nothing",
+        "primary": "#0A0A0A", "on_primary": "#FFFFFF",
+        "primary_container": "#E3E3E3", "on_primary_container": "#0A0A0A",
+        "secondary": "#4A4A4A", "on_secondary": "#FFFFFF",
+        "secondary_container": "#ECECEC", "on_secondary_container": "#1A1A1A",
         "tertiary": "#D71921", "on_tertiary": "#FFFFFF",
-        "tertiary_container": "#3A0D10", "on_tertiary_container": "#FFB3B6",
+        "tertiary_container": "#FFDADB", "on_tertiary_container": "#4A0509",
         "error": "#D71921", "on_error": "#FFFFFF",
-        "error_container": "#3A0D10", "on_error_container": "#FFB3B6",
-        "success": "#8FD694", "on_success": "#000000",
-        "success_container": "#14301A", "on_success_container": "#C6F0C9",
-        "warning": "#F2B84B", "on_warning": "#000000",
-        "warning_container": "#3A2B08", "on_warning_container": "#FFE2A8",
-        "surface": "#000000", "on_surface": "#FFFFFF",
-        "surface_variant": "#1C1C1C", "on_surface_variant": "#A3A3A3",
-        "surface_dim": "#000000", "surface_bright": "#2A2A2A",
-        "surface_container_lowest": "#000000", "surface_container_low": "#0B0B0B",
-        "surface_container": "#121212", "surface_container_high": "#1A1A1A",
-        "surface_container_highest": "#242424", "outline": "#5C5C5C",
-        "outline_variant": "#2B2B2B", "inverse_surface": "#FFFFFF",
-        "inverse_on_surface": "#000000", "inverse_primary": "#000000",
-        "surface_tint": "#FFFFFF", "shadow": "#000000", "scrim": "#000000",
+        "error_container": "#FFDADB", "on_error_container": "#4A0509",
+        "success": "#1F7A2C", "on_success": "#FFFFFF",
+        "success_container": "#CDEFD1", "on_success_container": "#0B2E11",
+        "warning": "#9A6200", "on_warning": "#FFFFFF",
+        "warning_container": "#FFE3B0", "on_warning_container": "#3A2400",
+        "surface": "#F2F2F2", "on_surface": "#0A0A0A",
+        "surface_variant": "#E6E6E6", "on_surface_variant": "#5E5E5E",
+        "surface_dim": "#DADADA", "surface_bright": "#FFFFFF",
+        "surface_container_lowest": "#FFFFFF", "surface_container_low": "#F8F8F8",
+        "surface_container": "#EFEFEF", "surface_container_high": "#E8E8E8",
+        "surface_container_highest": "#E0E0E0", "outline": "#8A8A8A",
+        "outline_variant": "#CFCFCF", "inverse_surface": "#0A0A0A",
+        "inverse_on_surface": "#F2F2F2", "inverse_primary": "#FFFFFF",
+        "surface_tint": "#0A0A0A", "shadow": "#000000", "scrim": "#000000",
         "md3": True,
     }
-    return p
 
 
 def read_palette(path: Path):
@@ -663,6 +727,80 @@ def read_palette(path: Path):
         return data if isinstance(data, dict) else None
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def resolve_light() -> bool:
+    """Follow Settings → Appearance → Color mode, resolving *system* via gsettings."""
+    mode = str(read_theme_setting("mode", "dark")).lower()
+    if mode == "light":
+        return True
+    if mode == "dark":
+        return False
+    try:
+        scheme = subprocess.check_output(
+            ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip()
+        if "prefer-light" in scheme:
+            return True
+        if "prefer-dark" in scheme:
+            return False
+        gtk = subprocess.check_output(
+            ["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"],
+            text=True, stderr=subprocess.DEVNULL,
+        ).strip().lower()
+        return "-dark" not in gtk
+    except Exception:
+        return False
+
+
+def remembered_wallpaper() -> str:
+    try:
+        return QUICKSHELL_WALLPAPER_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
+
+
+def build_wallpaper_palettes(wallpaper: str) -> tuple[dict, dict]:
+    """Extract both variants once, so switching light/dark never re-runs matugen."""
+    color, _, role_hex = get_matugen_colors(wallpaper, "dark")
+    dark = build_palette(color, dark=True)
+    dark.update(md3_tokens(role_hex))
+
+    light_color = color
+    try:
+        light_color, _, _ = get_matugen_colors(wallpaper, "light")
+    except (Exception, SystemExit):
+        pass
+    light = build_palette(light_color, dark=False)
+    return dark, light
+
+
+def current_palette() -> tuple[dict, str]:
+    """The palette that matches design + color mode + dynamic colors right now."""
+    is_light = resolve_light()
+    dark = not is_light
+    design = str(read_theme_setting("design", "material")).lower()
+
+    if design == "nothing":
+        return nothing_palette(dark), "nothing"
+
+    dynamic = bool(read_theme_setting("dynamicColor", True))
+    if dynamic:
+        path = WALLPAPER_PALETTE_JSON if dark else WALLPAPER_PALETTE_LIGHT_JSON
+        palette = read_palette(path)
+        if palette is not None:
+            return palette, "wallpaper"
+
+        wallpaper = remembered_wallpaper()
+        if wallpaper and Path(wallpaper).is_file():
+            dark_palette, light_palette = build_wallpaper_palettes(wallpaper)
+            write_json(WALLPAPER_PALETTE_JSON, dark_palette)
+            write_json(WALLPAPER_PALETTE_LIGHT_JSON, light_palette)
+            return (dark_palette if dark else light_palette), "wallpaper"
+
+    accent = str(read_theme_setting("accent", "#74e7c8") or "#74e7c8")
+    return build_palette(accent, dark=dark), "accent"
 
 
 def apply_palette(palette: dict, wallpaper: str, mode: str, reload_apps: bool = True, restart_shell: bool = True):
@@ -705,7 +843,16 @@ def remember_wallpaper(wallpaper: str):
     logging.info("current-wallpaper -> %s", wallpaper)
 
 
+def acquire_lock():
+    """Serialize palette writes; a newer run then wins instead of interleaving."""
+    THEME_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    handle = THEME_LOCK.open("w")
+    fcntl.flock(handle, fcntl.LOCK_EX)
+    return handle
+
+
 def main():
+    lock = acquire_lock()
     parser = argparse.ArgumentParser(
         description="Generate wallpaper-driven colors or switch the desktop to a Nothing-inspired palette."
     )
@@ -713,67 +860,73 @@ def main():
     parser.add_argument("--nothing", action="store_true", help="apply the fixed Nothing palette")
     parser.add_argument("--wallpaper", dest="wallpaper_mode", action="store_true",
                         help="restore wallpaper-derived colors from the saved palette")
+    parser.add_argument("--sync", action="store_true",
+                        help="re-apply the current design/mode/accent without re-reading the wallpaper")
     parser.add_argument("--no-reload", action="store_true", help="write config files without reloading apps")
     parser.add_argument("--no-shell-restart", action="store_true", help="reload GTK/KDE colors but do not kill/restart Quickshell (safe when called from Quickshell)")
     args = parser.parse_args()
 
     if args.nothing and args.wallpaper_mode:
         parser.error("choose either --nothing or --wallpaper, not both")
+    if args.sync and (args.nothing or args.wallpaper_mode or args.wallpaper):
+        parser.error("--sync cannot be combined with a palette selection")
 
-    # Use the last selected wallpaper when switching modes without passing a path.
-    remembered_wallpaper = ""
-    try:
-        remembered_wallpaper = QUICKSHELL_WALLPAPER_FILE.read_text(encoding="utf-8").strip()
-    except OSError:
-        pass
-    wallpaper = os.path.abspath(os.path.expanduser(args.wallpaper)) if args.wallpaper else remembered_wallpaper
+    wallpaper = os.path.abspath(os.path.expanduser(args.wallpaper)) if args.wallpaper else remembered_wallpaper()
+
+    if args.sync:
+        palette, mode = current_palette()
+        apply_palette(palette, wallpaper, mode,
+                      reload_apps=not args.no_reload,
+                      restart_shell=not args.no_shell_restart)
+        return
 
     if args.nothing:
         # Preserve the dynamic palette and wallpaper path; Nothing mode must not run Matugen.
-        palette = nothing_palette()
+        palette = nothing_palette(dark=not resolve_light())
         apply_palette(palette, wallpaper, "nothing", reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
         return
 
     if args.wallpaper_mode:
         if args.wallpaper:
-            # Explicit image means regenerate the dynamic palette from that wallpaper.
-            if Path(wallpaper).is_file():
-                remember_wallpaper(wallpaper)
-            color, _, role_hex = get_matugen_colors(wallpaper)
-            palette = build_palette(color)
-            palette.update(md3_tokens(role_hex))
-            write_json(WALLPAPER_PALETTE_JSON, palette)
+            # Explicit image means regenerate both dynamic palettes from that wallpaper.
+            if not Path(wallpaper).is_file():
+                parser.error(f"wallpaper image does not exist: {wallpaper}")
+            remember_wallpaper(wallpaper)
+            dark_palette, light_palette = build_wallpaper_palettes(wallpaper)
+            write_json(WALLPAPER_PALETTE_JSON, dark_palette)
+            write_json(WALLPAPER_PALETTE_LIGHT_JSON, light_palette)
         else:
-            palette = read_palette(WALLPAPER_PALETTE_JSON)
-            if palette is None:
-                parser.error(f"No saved wallpaper palette at {WALLPAPER_PALETTE_JSON}; pass an image path")
-        if not wallpaper or not Path(wallpaper).is_file():
-            parser.error("the remembered wallpaper is missing; pass a valid wallpaper image")
-        apply_palette(palette, wallpaper, "wallpaper", reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
+            if not wallpaper or not Path(wallpaper).is_file():
+                parser.error("the remembered wallpaper is missing; pass a valid wallpaper image")
+
+        if str(read_theme_setting("design", "material")).lower() == "nothing":
+            palette, mode = nothing_palette(dark=not resolve_light()), "nothing"
+        else:
+            palette, mode = current_palette()
+        apply_palette(palette, wallpaper, mode, reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
         return
 
     if not args.wallpaper:
-        parser.error("pass a wallpaper image, or use --nothing / --wallpaper")
+        parser.error("pass a wallpaper image, or use --nothing / --wallpaper / --sync")
     if not Path(wallpaper).is_file():
         parser.error(f"wallpaper image does not exist: {wallpaper}")
     remember_wallpaper(wallpaper)
-    color, _, role_hex = get_matugen_colors(wallpaper)
-    wallpaper_palette = build_palette(color)
-    wallpaper_palette.update(md3_tokens(role_hex))
-    # Keep the wallpaper palette saved even in Nothing mode: switching back to
-    # Material can then restore it without re-reading the image.
-    write_json(WALLPAPER_PALETTE_JSON, wallpaper_palette)
+    dark_palette, light_palette = build_wallpaper_palettes(wallpaper)
+    # Keep both palettes saved even in Nothing mode: switching back to Material
+    # or between light/dark can then restore them without re-reading the image.
+    write_json(WALLPAPER_PALETTE_JSON, dark_palette)
+    write_json(WALLPAPER_PALETTE_LIGHT_JSON, light_palette)
 
-    if str(read_theme_setting("design", "material")) == "nothing":
+    if str(read_theme_setting("design", "material")).lower() == "nothing":
         # Nothing is a fixed monochrome/red design. Picking a wallpaper must not
         # repaint GTK, terminals and KDE with wallpaper colours.
-        apply_palette(nothing_palette(), wallpaper, "nothing",
-                      reload_apps=not args.no_reload,
-                      restart_shell=not args.no_shell_restart)
+        palette, mode = nothing_palette(dark=not resolve_light()), "nothing"
     else:
-        apply_palette(wallpaper_palette, wallpaper, "wallpaper",
-                      reload_apps=not args.no_reload,
-                      restart_shell=not args.no_shell_restart)
+        palette, mode = (light_palette if resolve_light() else dark_palette), "wallpaper"
+
+    apply_palette(palette, wallpaper, mode,
+                  reload_apps=not args.no_reload,
+                  restart_shell=not args.no_shell_restart)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,8 @@
 # Lock, wait for ack, suspend.
 set -euo pipefail
 
-LOCK="$HOME/Dotfiles/quickshell/bar/lockscreen/lock.sh"
+LOCK="$HOME/.config/quickshell/bar/lockscreen/lock.sh"
+[ -f "$LOCK" ] || LOCK="$HOME/Dotfiles/quickshell/bar/lockscreen/lock.sh"
 
 # Kick off the lock (idempotent — pgrep guard inside)
 bash "$LOCK" &

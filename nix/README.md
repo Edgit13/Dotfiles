@@ -19,7 +19,7 @@
 ```nix
 # flake.nix користувача
 {
-  inputs.edots.url = "github:Edgit13/Edots-rice";   # або path:./Edots-rice
+  inputs.edots.url = "github:Edgit13/Dotfiles";   # або path:./Dotfiles
   inputs.edots.inputs.nixpkgs.follows = "nixpkgs";
   inputs.mango.url = "github:mangowm/mango";
   inputs.mango.inputs.nixpkgs.follows = "nixpkgs";

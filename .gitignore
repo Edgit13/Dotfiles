@@ -50,6 +50,8 @@ quickshell/colors.json
 quickshell/current-wallpaper.txt
 quickshell/audio-studio.json
 quickshell/settings.json
+quickshell/plugins.json
+quickshell/per-app-audio.json
 quickshell/tasks.json
 quickshell/active-preset
 quickshell/presets/

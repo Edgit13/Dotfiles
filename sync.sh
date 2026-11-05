@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# sync.sh — Edots-rice config symlinker.
+# sync.sh — Dotfiles config symlinker.
 #
 # Links each config in the repository directly into ~/.config via symlink,
 # so editing the repo file and editing ~/.config/... touch the same file.
@@ -198,7 +198,7 @@ cmd_install() {
       run python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
         || warn "wallcolors.py failed, run manually"
     else
-      warn "no wallpapers found — clone Edot-Wallpapers or set one manually"
+      warn "no wallpapers found — clone Rice-Wallpapers or set one manually"
     fi
   fi
 

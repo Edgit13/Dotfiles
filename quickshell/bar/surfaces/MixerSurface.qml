@@ -30,10 +30,22 @@ Item {
     readonly property bool nothing: Theme.settings.nothing
     property int brightnessVal: 50
     property int currentTab: 0
+    // stream whose output list is expanded in the Apps tab
+    property int routingIndex: -1
 
     Component.onCompleted: {
+        if (ShellState.mixerTab > 0) {
+            root.currentTab = ShellState.mixerTab
+            ShellState.mixerTab = 0
+        }
         AudioService.subscribe()
         if (!brightnessQuery.running) brightnessQuery.running = true
+    }
+
+    // `edots app-audio ui` while the mixer is already open.
+    Connections {
+        target: ShellState
+        function onOpenMixerTabRequested(tab) { root.currentTab = tab }
     }
     Component.onDestruction: AudioService.unsubscribe()
 
@@ -84,6 +96,36 @@ Item {
         root.brightnessVal = clamped
         brightnessSetProc.command = ["brightnessctl", "s", clamped + "%"]
         brightnessSetProc.running = true
+    }
+
+    function streamIcon(stream) {
+        if (!stream) return ""
+        let name = stream.icon || ""
+        if (!name) {
+            const entry = DesktopEntries.heuristicLookup(stream.name || stream.binary || "")
+            if (entry && entry.icon) name = entry.icon
+        }
+        if (!name) return ""
+        return Quickshell.iconPath(name, true)
+    }
+
+    function streamSink(stream) {
+        if (!stream) return ""
+        return stream.sinkDescription || stream.sinkName || ""
+    }
+
+    function streamPinned(stream) {
+        return !!AudioService.routeFor(stream)
+    }
+
+    function chooseSink(stream, sinkName) {
+        AudioService.routeStream(stream, sinkName)
+        root.routingIndex = -1
+    }
+
+    function followDefault(stream) {
+        AudioService.followDefault(stream)
+        root.routingIndex = -1
     }
 
     PwObjectTracker { objects: [root.sink] }
@@ -503,7 +545,7 @@ Item {
         }
 
         // ==================================================================
-        // ВКЛАДКА 3: ГУЧНІСТЬ ДОДАТКІВ (SINK-INPUTS)
+        // ВКЛАДКА 3: ГУЧНІСТЬ І ВИВІД ДОДАТКІВ (SINK-INPUTS)
         // ==================================================================
         Flickable {
             Layout.fillWidth: true
@@ -519,24 +561,38 @@ Item {
                 width: parent.width
                 spacing: Theme.space.sm
 
-                ThemedText {
-                    text: Lang.t("mixer.apps.title")
-                    style: Theme.type.labelMedium
-                    emphasized: true
-                    color: Theme.color.primary
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.space.sm
+
+                    ThemedText {
+                        Layout.fillWidth: true
+                        text: Lang.t("mixer.apps.title")
+                        style: Theme.type.labelMedium
+                        emphasized: true
+                        color: Theme.color.primary
+                    }
+
+                    MaterialButton {
+                        visible: AudioService.streams.length > 0
+                        text: Lang.t("mixer.apps.muteAll")
+                        icon: "volume_off"
+                        style: "text"
+                        onClicked: AudioService.muteAllStreams()
+                    }
                 }
 
                 Item {
                     visible: AudioService.streams.length === 0
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Theme.components.dp(120)
+                    Layout.preferredHeight: Theme.components.dp(132)
 
                     ColumnLayout {
                         anchors.centerIn: parent
                         spacing: Theme.space.sm
                         Text {
                             Layout.alignment: Qt.AlignHCenter
-                            text: "\ue405" // music_off
+                            text: "music_off"
                             color: Theme.color.outline
                             font { family: Theme.type.icons; pixelSize: Theme.components.dp(36) }
                         }
@@ -546,19 +602,29 @@ Item {
                             style: Theme.type.bodyMedium
                             color: Theme.color.outline
                         }
+                        ThemedText {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: Lang.t("mixer.apps.emptyHint")
+                            style: Theme.type.bodySmall
+                            color: Theme.color.outline
+                        }
                     }
                 }
 
                 Repeater {
                     model: AudioService.streams
                     delegate: Rectangle {
+                        id: card
                         required property var modelData
+
                         Layout.fillWidth: true
                         implicitHeight: stCol.implicitHeight + Theme.space.md * 2
                         radius: root.nothing ? ThemeNothing.corners.md : Theme.shape.md
                         color: root.nothing ? "transparent" : Theme.color.surfaceContainer
                         border.width: 1
-                        border.color: Theme.color.outlineVariant
+                        border.color: root.streamPinned(card.modelData)
+                                      ? (root.nothing ? ThemeNothing.red : Theme.color.primary)
+                                      : Theme.color.outlineVariant
 
                         ColumnLayout {
                             id: stCol
@@ -570,24 +636,48 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: Theme.space.sm
 
-                                Text {
-                                    text: "\ue405"
-                                    color: modelData.muted ? Theme.color.error : Theme.color.primary
-                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
+                                Rectangle {
+                                    implicitWidth: Theme.components.dp(36)
+                                    implicitHeight: implicitWidth
+                                    radius: root.nothing ? ThemeNothing.corners.sm : Theme.shape.sm
+                                    color: root.nothing ? "transparent" : Theme.color.surfaceContainerHigh
+                                    border.width: root.nothing ? 1 : 0
+                                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.16)
+
+                                    Image {
+                                        id: streamIcon
+                                        anchors.centerIn: parent
+                                        width: Theme.components.dp(24)
+                                        height: width
+                                        source: root.streamIcon(card.modelData)
+                                        visible: source.length > 0
+                                        fillMode: Image.PreserveAspectFit
+                                        sourceSize: Qt.size(48, 48)
+                                        asynchronous: true
+                                    }
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: !streamIcon.visible
+                                        text: "music_note"
+                                        color: card.modelData.muted ? Theme.color.error : Theme.color.primary
+                                        font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
+                                    }
                                 }
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
                                     spacing: 1
                                     ThemedText {
-                                        text: modelData.name || modelData.binary
+                                        Layout.fillWidth: true
+                                        text: card.modelData.name || card.modelData.binary
                                         style: Theme.type.titleSmall
                                         emphasized: true
                                         elide: Text.ElideRight
                                     }
                                     ThemedText {
-                                        visible: modelData.media.length > 0 && modelData.media !== modelData.name
-                                        text: modelData.media
+                                        Layout.fillWidth: true
+                                        visible: card.modelData.media.length > 0 && card.modelData.media !== card.modelData.name
+                                        text: card.modelData.media
                                         style: Theme.type.labelSmall
                                         color: Theme.color.outline
                                         elide: Text.ElideRight
@@ -595,17 +685,131 @@ Item {
                                 }
 
                                 MaterialIconButton {
-                                    icon: modelData.muted ? "volume_off" : "volume_up"
-                                    color: modelData.muted ? Theme.color.error : Theme.color.primary
-                                    onClicked: AudioService.toggleStreamMute(modelData.index)
+                                    visible: root.streamPinned(card.modelData)
+                                    icon: "push_pin"
+                                    style: "tonal"
+                                    selected: true
+                                    tooltip: Lang.t("mixer.apps.pinned")
+                                    onClicked: root.followDefault(card.modelData)
+                                }
+
+                                MaterialIconButton {
+                                    icon: card.modelData.muted ? "volume_off" : "volume_up"
+                                    color: card.modelData.muted ? Theme.color.error : Theme.color.primary
+                                    tooltip: card.modelData.muted ? Lang.t("mixer.apps.unmute") : Lang.t("mixer.apps.mute")
+                                    onClicked: AudioService.toggleStreamMute(card.modelData.index)
                                 }
                             }
 
                             XSlider {
                                 Layout.fillWidth: true
-                                fraction: modelData.volume / 100
-                                valueLabel: modelData.volume + "%"
-                                onSetFraction: pct => AudioService.setStreamVolume(modelData.index, pct * 100)
+                                fraction: card.modelData.volume / 100
+                                valueLabel: card.modelData.volume + "%"
+                                onSetFraction: pct => AudioService.setStreamVolume(card.modelData.index, pct * 100)
+                            }
+
+                            MaterialButton {
+                                Layout.fillWidth: true
+                                text: root.streamSink(card.modelData)
+                                icon: root.streamPinned(card.modelData) ? "push_pin" : "speaker"
+                                style: "outlined"
+                                tooltip: Lang.t("mixer.apps.outputHint")
+                                onClicked: root.routingIndex = root.routingIndex === card.modelData.index ? -1 : card.modelData.index
+                            }
+
+                            // Inline sink picker: keeping it inside the card avoids
+                            // a popup being clipped by the small mixer surface.
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                visible: root.routingIndex === card.modelData.index
+                                spacing: Theme.space.xxs
+
+                                Repeater {
+                                    model: AudioService.sinks
+                                    delegate: Rectangle {
+                                        id: sinkRow
+                                        required property var modelData
+
+                                        Layout.fillWidth: true
+                                        implicitHeight: sinkRowLayout.implicitHeight + Theme.space.xs * 2
+                                        radius: root.nothing ? ThemeNothing.corners.sm : Theme.shape.sm
+                                        color: sinkRow.modelData.name === card.modelData.sinkName
+                                               ? (root.nothing ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.08) : Theme.color.surfaceContainerHighest)
+                                               : "transparent"
+                                        border.width: 1
+                                        border.color: sinkRow.modelData.name === card.modelData.sinkName
+                                                      ? (root.nothing ? ThemeNothing.red : Theme.color.primary)
+                                                      : Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.12)
+
+                                        RowLayout {
+                                            id: sinkRowLayout
+                                            anchors.fill: parent
+                                            anchors.margins: Theme.space.xs
+                                            spacing: Theme.space.sm
+
+                                            Text {
+                                                text: sinkRow.modelData.name.indexOf("bluez") >= 0 ? "headphones" : "speaker"
+                                                color: sinkRow.modelData.name === card.modelData.sinkName
+                                                       ? (root.nothing ? ThemeNothing.red : Theme.color.primary)
+                                                       : Theme.color.outline
+                                                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                                            }
+                                            ThemedText {
+                                                Layout.fillWidth: true
+                                                text: sinkRow.modelData.description || sinkRow.modelData.name
+                                                style: Theme.type.bodySmall
+                                                emphasized: sinkRow.modelData.name === card.modelData.sinkName
+                                                elide: Text.ElideRight
+                                            }
+                                            ThemedText {
+                                                visible: sinkRow.modelData.name === card.modelData.sinkName
+                                                text: Lang.t("mixer.apps.current")
+                                                style: Theme.type.labelSmall
+                                                color: root.nothing ? ThemeNothing.red : Theme.color.primary
+                                            }
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: root.chooseSink(card.modelData, sinkRow.modelData.name)
+                                        }
+                                    }
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: followLayout.implicitHeight + Theme.space.xs * 2
+                                    radius: root.nothing ? ThemeNothing.corners.sm : Theme.shape.sm
+                                    color: "transparent"
+                                    border.width: 1
+                                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.12)
+
+                                    RowLayout {
+                                        id: followLayout
+                                        anchors.fill: parent
+                                        anchors.margins: Theme.space.xs
+                                        spacing: Theme.space.sm
+
+                                        Text {
+                                            text: "link_off"
+                                            color: Theme.color.outline
+                                            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                                        }
+                                        ThemedText {
+                                            Layout.fillWidth: true
+                                            text: Lang.t("mixer.apps.followDefault")
+                                            style: Theme.type.bodySmall
+                                            color: Theme.color.outline
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.followDefault(card.modelData)
+                                    }
+                                }
                             }
                         }
                     }

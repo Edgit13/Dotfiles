@@ -7,7 +7,7 @@ set -euo pipefail
 BAR_SHELL="$HOME/.config/quickshell/bar/shell.qml"
 
 # Start the bar if it is not running.
-if ! pgrep -f "qs -d -p .*bar/shell.qml" >/dev/null; then
+if ! pgrep -f "qs .*-p .*bar/shell.qml" >/dev/null; then
     qs -d -p "$BAR_SHELL" >/dev/null 2>&1
     sleep 1
 fi

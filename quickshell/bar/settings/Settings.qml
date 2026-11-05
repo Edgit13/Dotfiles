@@ -28,6 +28,8 @@ Singleton {
                onFileChanged: reload(); onTextChanged: root._onFile("widgets.json", text()) }
     FileView { path: root.base + "lockscreen.json"; watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("lockscreen.json", text()) }
+    FileView { path: root.base + "session.json";    watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("session.json", text()) }
     FileView { path: root.base + "colors.json";     watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("colors.json", text()) }
 
@@ -38,6 +40,7 @@ Singleton {
     FileView { id: wMonitor; path: root.base + "monitor.json";   atomicWrites: true; printErrors: false }
     FileView { id: wWidgets; path: root.base + "widgets.json";   atomicWrites: true; printErrors: false }
     FileView { id: wLock;   path: root.base + "lockscreen.json"; atomicWrites: true; printErrors: false }
+    FileView { id: wSession; path: root.base + "session.json";   atomicWrites: true; printErrors: false }
     FileView { id: wColors; path: root.base + "colors.json";     atomicWrites: true; printErrors: false }
 
     function _writer(file) {
@@ -49,6 +52,7 @@ Singleton {
         case "monitor.json":    return wMonitor
         case "widgets.json":    return wWidgets
         case "lockscreen.json": return wLock
+        case "session.json":    return wSession
         case "colors.json":     return wColors
         }
         return null

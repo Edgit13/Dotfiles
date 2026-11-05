@@ -14,9 +14,7 @@ Item {
     implicitHeight: col.implicitHeight + Theme.space.xl
 
     function openPlugin(plugin) {
-        if (!plugin || !plugin.enabled || !plugin.surface) return
-        ShellState.closeSettings()
-        ShellState.openSurface("plugin:" + plugin.id)
+        PluginService.requestOpen(plugin)
     }
 
     component Chip: Rectangle {

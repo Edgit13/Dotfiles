@@ -30,8 +30,16 @@ PanelWindow {
 
     readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "audio", "display", "wifi", "bluetooth", "media", "power", "binds", "resources", "dashboard"]
     readonly property string activeSurface: ShellState.activeSurface
+    readonly property bool isPluginSurface: activeSurface.indexOf("plugin:") === 0
+    readonly property string pluginId: isPluginSurface ? activeSurface.substring(7) : ""
+
+    function isKnownSurface(surface) {
+        return overlaySurfaces.indexOf(surface) >= 0
+            || (surface.indexOf("plugin:") === 0 && PluginService.hasSurface(surface.substring(7)))
+    }
+
     // дашборд тут лише коли він НЕ морфиться з бару
-    readonly property bool isAllowedSurface: overlaySurfaces.indexOf(activeSurface) >= 0
+    readonly property bool isAllowedSurface: isKnownSurface(activeSurface)
         && (activeSurface !== "dashboard" || BarConfig.openMode !== "morph")
     readonly property bool isOpen: !BarConfig.pillMorph && isAllowedSurface
         && (isCurrentMonitor || Quickshell.screens.length === 1)
@@ -42,9 +50,12 @@ PanelWindow {
     // тримаємо поверхню, поки грає анімація закриття
     property string shownSurface: "idle"
     // не покладаємось на isAllowedSurface: його binding може оновитись ПІСЛЯ цього обробника
-    onActiveSurfaceChanged: if (overlaySurfaces.indexOf(activeSurface) >= 0) shownSurface = activeSurface
+    // Поверхню створює лише той монітор, на якому її відкрито: інакше кожен
+    // SurfaceOverlay тримає власний екземпляр і прихований перехоплює one-shot
+    // стан (mixerTab). У morph-режимі поверхні живуть у піллі (BarWindow).
+    onActiveSurfaceChanged: if (!BarConfig.pillMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
     onVisibleChanged: if (!visible) shownSurface = "idle"
-    Component.onCompleted: if (overlaySurfaces.indexOf(activeSurface) >= 0) shownSurface = activeSurface
+    Component.onCompleted: if (!BarConfig.pillMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
 
     readonly property var meta: ({
         launcher:  { icon: "\ue5c3", title: "ui.surface.launcher",  w: 560, h: 520, end: false, typing: true },
@@ -56,12 +67,37 @@ PanelWindow {
         wifi:      { icon: "\ue63e", title: "ui.surface.wifi",      w: 460, h: 440, end: true,  typing: false },
         bluetooth: { icon: "\ue1a7", title: "ui.surface.bluetooth", w: 460, h: 480, end: true,  typing: false },
         media:     { icon: "\ue405", title: "ui.surface.media",     w: 460, h: 320, end: true,  typing: false },
-        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 290, end: true,  typing: false },
+        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 344, end: true,  typing: false },
         binds:     { icon: "\ue312", title: "ui.surface.binds",     w: 700, h: 620, end: false, typing: true },
         resources: { icon: "\ue322", title: "ui.surface.resources", w: 560, h: 620, end: false, typing: false },
         dashboard: { icon: "\ue871", title: "ui.surface.dashboard", w: 920, h: 760, end: false, typing: false }
     })
-    readonly property var m: meta[shownSurface] || meta.launcher
+
+    // Plugin metadata comes from plugin.json; its title is already human text.
+    function pluginMeta(surface) {
+        if (surface.indexOf("plugin:") !== 0) return null
+        const plugin = PluginService.surfaceFor(surface.substring(7))
+        if (!plugin || !plugin.surface) return null
+        return {
+            icon: plugin.icon || "\ue5c3",
+            title: plugin.name,
+            rawTitle: true,
+            w: plugin.surface.w,
+            h: plugin.surface.h,
+            end: !!plugin.surface.end,
+            typing: !!plugin.surface.typing
+        }
+    }
+    readonly property var m: meta[shownSurface] || pluginMeta(shownSurface) || meta.launcher
+
+    // If a plugin is disabled while its surface is open, close it immediately.
+    Connections {
+        target: PluginService
+        function onPluginsChanged() {
+            if (win.isPluginSurface && !win.isAllowedSurface)
+                ShellState.closeSurfaces()
+        }
+    }
 
     // ---- розташування відносно бару ----
     readonly property string _cfgBar: BarConfig.positionFor(monitorName)
@@ -193,7 +229,7 @@ PanelWindow {
                         }
                     }
                     ThemedText {
-                        text: Lang.t(win.m.title)
+                        text: win.m.rawTitle ? win.m.title : Lang.t(win.m.title)
                         style: Theme.type.titleMedium
                         emphasized: true
                     }
@@ -296,6 +332,21 @@ PanelWindow {
                         active: win.shownSurface === "resources"
                         visible: active
                         sourceComponent: ResourcesSurface {}
+                        onLoaded: {
+                            if (item && item.requestClose)
+                                item.requestClose.connect(function () { ShellState.closeSurfaces() })
+                        }
+                    }
+
+                    // Plugin surfaces are loaded from their own folders. They
+                    // may import the shell modules with `import qs.theme`,
+                    // `qs.shell`, `qs.modules.common`, … (see plugins/README.md).
+                    Loader {
+                        id: pluginLoader
+                        anchors.fill: parent
+                        active: win.shownSurface.indexOf("plugin:") === 0
+                        visible: active
+                        source: active ? PluginService.surfaceQml(win.shownSurface.substring(7)) : ""
                         onLoaded: {
                             if (item && item.requestClose)
                                 item.requestClose.connect(function () { ShellState.closeSurfaces() })

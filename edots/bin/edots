@@ -21,6 +21,14 @@ RELOAD_SH="$HOME/.config/quickshell/bar/reload.sh"
 LOCK_DIR="$HOME/.config/quickshell/bar/lockscreen"
 [ -d "$LOCK_DIR" ] || LOCK_DIR="$REPO_DIR/quickshell/bar/lockscreen"
 FIREFOX_HELPER="$REPO_DIR/edots/bin/link-firefox-chrome.sh"
+PLUGIN_HELPER="$HOME/.config/quickshell/bar/scripts/plugins.py"
+[ -f "$PLUGIN_HELPER" ] || PLUGIN_HELPER="$REPO_DIR/quickshell/bar/scripts/plugins.py"
+AUDIO_HELPER="$HOME/.config/quickshell/bar/scripts/audioinfo.py"
+[ -f "$AUDIO_HELPER" ] || AUDIO_HELPER="$REPO_DIR/quickshell/bar/scripts/audioinfo.py"
+THEME_HELPER="$HOME/.config/mango/scripts/wallcolors.py"
+[ -f "$THEME_HELPER" ] || THEME_HELPER="$REPO_DIR/mango/scripts/wallcolors.py"
+SESSION_HELPER="$HOME/.config/quickshell/bar/scripts/sessionidle.py"
+[ -f "$SESSION_HELPER" ] || SESSION_HELPER="$REPO_DIR/quickshell/bar/scripts/sessionidle.py"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     C_OK=$'\033[0;32m'; C_WARN=$'\033[0;33m'; C_ERR=$'\033[0;31m'
@@ -81,6 +89,40 @@ cmd_reload() {
     bash "$RELOAD_SH"
 }
 
+# ───────────────────────────── theme ─────────────────────────────
+cmd_theme_status() {
+    python3 - "$HOME/.config/quickshell/theme.json" \
+              "$HOME/.config/quickshell/colors.json" \
+              "$HOME/.config/mango/wallcolors-mode" <<'PY'
+import json, sys
+from pathlib import Path
+
+theme_path, colors_path, mode_path = (Path(p) for p in sys.argv[1:])
+try:
+    theme = json.loads(theme_path.read_text(encoding="utf-8"))
+except Exception:
+    theme = {}
+try:
+    colors = json.loads(colors_path.read_text(encoding="utf-8"))
+except Exception:
+    colors = {}
+try:
+    mode = mode_path.read_text(encoding="utf-8").strip() or "unknown"
+except Exception:
+    mode = "unknown"
+
+design = str(theme.get("design", "material")).capitalize()
+mode_setting = str(theme.get("mode", "dark"))
+dynamic = "on" if theme.get("dynamicColor", True) else "off"
+accent = theme.get("accent", "#74e7c8")
+print(f"Design    {design}")
+print(f"Mode      {mode_setting}")
+print(f"Dynamic   {dynamic}")
+print(f"Accent    {accent}")
+print(f"Palette   {mode}  (bg {colors.get('bg0', '—')}, fg {colors.get('fg', '—')})")
+PY
+}
+
 # ───────────────────────────── doctor ─────────────────────────────
 cmd_doctor() {
     local ok=0 warn=0 fail=0
@@ -92,7 +134,7 @@ cmd_doctor() {
 
     local required=(qs mango mmsg matugen awww cliphist brightnessctl nmcli
                     playerctl grim tesseract python3 gcc wpctl wl-copy fc-list wlr-randr)
-    local optional=(jq yay fastfetch starship blueman-applet nm-applet fd)
+    local optional=(jq yay fastfetch starship blueman-applet nm-applet fd wlopm)
 
     dhead "Packages"
     local miss=()
@@ -178,6 +220,11 @@ cmd_doctor() {
             dwarn "service not enabled: $unit"
         fi
     done
+    if command -v wlopm >/dev/null 2>&1; then
+        dok "wlopm available (display-off idle timer)"
+    else
+        dwarn "wlopm missing — display-off idle timer disabled (sudo pacman -S wlopm)"
+    fi
     if [ -f "$HOME/.config/systemd/user/edots-lockscreen.service" ]; then
         dwarn "obsolete unit present: edots-lockscreen.service — disable it with:"
         printf '      systemctl --user disable --now edots-lockscreen.service\n'
@@ -260,11 +307,32 @@ ${C_BOLD}Surfaces${C_OFF}
   edots screenshot [stop]     QuickSnip capture    (Super+U)
   edots close                 close every open surface (Super+Esc)
 
+${C_BOLD}Per-app audio${C_OFF}
+  edots app-audio             apps, volumes and saved output routes
+  edots app-audio ui          open the mixer on its Apps tab
+  edots app-audio sinks       list playback devices
+  edots app-audio route <app> <sink>   pin an app to an output
+  edots app-audio forget <app>         follow the system default again
+  edots app-audio apply       move running apps to their saved outputs
+
+${C_BOLD}Plugins${C_OFF}
+  edots plugin                list installed plugins and their state
+  edots plugin open <id>      open a plugin panel
+  edots plugin enable <id>    enable a plugin (also: disable, toggle)
+  edots plugin reload         rescan plugin folders
+  edots plugin folder         open ~/.config/edots/plugins
+  edots plugin path           print the user plugin folder
+
 ${C_BOLD}System${C_OFF}
+  edots theme                 design, mode, accent and applied palette
+  edots theme sync            repaint GTK, terminals, Firefox, rofi, KDE
   edots theme toggleDesign    Material <-> Nothing
   edots theme setMode dark    dark | light | toggleMode
   edots theme setTransition dots
   edots osd volumeUp          volumeUp|volumeDown|volumeMute|brightnessUp|brightnessDown
+  edots session               idle timers, swayidle and session actions
+  edots session apply         regenerate swayidle.conf from Settings
+  edots session lock|suspend|logout|reboot|poweroff
   edots lock                  lock the screen              (Super+L)
   edots suspend               lock, then suspend           (Super+F3)
   edots reload                restart the bar shell        (Super+Shift+R)
@@ -319,16 +387,109 @@ case "$cmd" in
         ipc_open notifications "$action"
         ;;
 
-    theme)
-        action="${1:-}"
+    app-audio|perapp|per-app)
+        action="${1:-status}"
         case "$action" in
+            ""|list|ls|status)
+                python3 "$AUDIO_HELPER" status
+                ;;
+            json)
+                python3 "$AUDIO_HELPER" list
+                ;;
+            ui|open)
+                ipc_open appaudio open
+                ;;
+            sinks)
+                python3 "$AUDIO_HELPER" sinks
+                ;;
+            route)
+                [ "$#" -ge 3 ] || die "usage: edots app-audio route <app> <sink>"
+                app="$2"
+                shift 2
+                route_out=$(python3 "$AUDIO_HELPER" route "$app" "$*")
+                if [ $? -ne 0 ]; then
+                    printf '%s\n' "$route_out"
+                    exit 1
+                fi
+                ipc_quiet appaudio refresh
+                python3 "$AUDIO_HELPER" status
+                ;;
+            forget|auto)
+                [ "$#" -ge 2 ] || die "usage: edots app-audio forget <app>"
+                python3 "$AUDIO_HELPER" route "$2" auto >/dev/null || exit 1
+                ipc_quiet appaudio refresh
+                python3 "$AUDIO_HELPER" status
+                ;;
+            apply)
+                python3 "$AUDIO_HELPER" apply >/dev/null || exit 1
+                ipc_quiet appaudio refresh
+                python3 "$AUDIO_HELPER" status
+                ;;
+            refresh)
+                ipc_quiet appaudio refresh
+                python3 "$AUDIO_HELPER" status
+                ;;
+            *)
+                die "unknown app-audio action: $action"
+                ;;
+        esac
+        ;;
+
+    plugin|plugins)
+        action="${1:-status}"
+        case "$action" in
+            ""|list|ls|status)
+                python3 "$PLUGIN_HELPER" status
+                ;;
+            json)
+                python3 "$PLUGIN_HELPER" list
+                ;;
+            enable|disable|toggle)
+                [ "$#" -ge 2 ] || die "usage: edots plugin $action <id>"
+                value="$action"
+                [ "$value" = "enable" ] && value="on"
+                [ "$value" = "disable" ] && value="off"
+                python3 "$PLUGIN_HELPER" set "$2" "$value" >/dev/null || exit 1
+                ipc_quiet plugins reload
+                python3 "$PLUGIN_HELPER" status
+                ;;
+            open)
+                [ "$#" -ge 2 ] || die "usage: edots plugin open <id>"
+                ipc_open plugins open "$2"
+                ;;
+            reload|refresh|scan)
+                ipc_open plugins reload
+                python3 "$PLUGIN_HELPER" status
+                ;;
+            folder|dir)
+                python3 "$PLUGIN_HELPER" open
+                ;;
+            path)
+                python3 "$PLUGIN_HELPER" path
+                ;;
+            *)
+                die "unknown plugin action: $action"
+                ;;
+        esac
+        ;;
+
+    theme)
+        action="${1:-status}"
+        case "$action" in
+            status)                cmd_theme_status ;;
+            sync|apply)
+                command -v python3 >/dev/null 2>&1 || die "python3 is required for theme sync"
+                [ -f "$THEME_HELPER" ] || die "wallcolors.py not found: $THEME_HELPER"
+                python3 "$THEME_HELPER" --sync --no-shell-restart \
+                    || die "theme sync failed (see ~/wallcolours.log)"
+                cmd_theme_status
+                ;;
             toggleDesign)          ipc_open theme toggleDesign ;;
             setMode|setTransition)
                 [ "$#" -ge 2 ] || die "usage: edots theme $action <value>"
                 ipc_open theme "$action" "$2"
                 ;;
-            "")                    die "usage: edots theme {toggleDesign|setMode <dark|light|toggleMode>|setTransition <off|fade|dots|scan>}" ;;
-            *)                     die "unknown theme action: $action" ;;
+            *)                     die "unknown theme action: $action (try: status, sync, toggleDesign, setMode, setTransition)" ;;
         esac
         ;;
     osd)
@@ -344,11 +505,22 @@ case "$cmd" in
         ;;
 
     reload|restart)        cmd_reload ;;
+    session)
+        action="${1:-status}"
+        [ -f "$SESSION_HELPER" ] || die "sessionidle.py not found: $SESSION_HELPER"
+        case "$action" in
+            status|apply|lock|suspend|logout|reboot|poweroff|pause|resume)
+                exec python3 "$SESSION_HELPER" "$action" ;;
+            *)  die "unknown session action: $action (try: status, apply, lock, suspend, logout, reboot, poweroff)" ;;
+        esac
+        ;;
     lock)
+        if [ -f "$SESSION_HELPER" ]; then exec python3 "$SESSION_HELPER" lock; fi
         [ -x "$LOCK_DIR/lock.sh" ] || die "lock script not found: $LOCK_DIR/lock.sh"
         exec bash "$LOCK_DIR/lock.sh"
         ;;
     suspend|sleep)
+        if [ -f "$SESSION_HELPER" ]; then exec python3 "$SESSION_HELPER" suspend; fi
         [ -x "$LOCK_DIR/suspend.sh" ] || die "suspend script not found: $LOCK_DIR/suspend.sh"
         exec bash "$LOCK_DIR/suspend.sh"
         ;;

@@ -3,7 +3,7 @@
 Лаконічний та функціональний конфіг для **MangoWM** + **Quickshell**.
 **[English version](README.en.md)**
 
-![Edots](screenshots/preview.png)
+<img src="../../screenshots/banner.png" alt="Nook rice for MangoWM + Quickshell" width="100%">
 
 ## Фічі
 
@@ -44,8 +44,8 @@ Quickshell (з Io/Wayland/Services/Networking), MangoWM, SF Pro Display/SF Mono/
 ## Встановлення
 
 ```sh
-git clone https://github.com/Edgit13/Edots-rice ~/Edots-rice
-cd ~/Edots-rice && ./install.sh   # або ./sync.sh для повторної синхронізації
+git clone https://github.com/Edgit13/Dotfiles ~/Dotfiles
+cd ~/Dotfiles && ./install.sh   # або ./sync.sh для повторної синхронізації
 qs -p ~/.config/quickshell/bar/shell.qml
 ```
 

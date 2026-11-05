@@ -25,6 +25,8 @@ ShellRoot {
         RecordService.ensure()
         MonitorService.ensure()        // легкий процес-монітор (procwatch.py)
         TimerService.ensure()          // перечитати таймери utimer і заново запустити очікування після входу
+        SessionService.ensure()        // застосувати таймери простою до swayidle
+        PluginService.ensure()         // знайти ~/.config/edots/plugins + вбудовані плагіни
     }
 
     id: root
@@ -44,6 +46,17 @@ ShellRoot {
         function onOpenTasksRequested()   { taskManagerWindow.open() }
         function onToggleTasksRequested() { taskManagerWindow.toggle() }
         function onCloseTasksRequested()  { taskManagerWindow.close() }
+    }
+
+    // Settings → Plugins asks the service to open a panel; close Settings first
+    // so the surface is not hidden behind the settings window.
+    Connections {
+        target: PluginService
+        function onOpenSurfaceRequested(id) {
+            ShellState.closeSettings()
+            if (PluginService.hasSurface(id))
+                ShellState.openSurface("plugin:" + id)
+        }
     }
 
     IpcHandler {
@@ -93,6 +106,37 @@ ShellRoot {
         function keep(): void   { DisplayService.keepChanges() }
         function apply(): void  { DisplayService.applyAll() }
         function refresh(): void { DisplayService.refresh() }
+    }
+
+    // per-app audio: open the mixer on its Apps tab
+    IpcHandler {
+        target: "appaudio"
+        function open(): void {
+            if (ShellState.activeSurface === "mixer")
+                ShellState.openMixerTabRequested(3)
+            else {
+                ShellState.mixerTab = 3
+                ShellState.openSurface("mixer")
+            }
+        }
+        function refresh(): void { AudioService.refresh() }
+    }
+
+    // плагіни: qs ipc call plugins open world-clock | setEnabled world-clock true
+    IpcHandler {
+        target: "plugins"
+        function open(id: string): void {
+            if (PluginService.hasSurface(id)) ShellState.openSurface("plugin:" + id)
+        }
+        function toggle(id: string): void {
+            if (PluginService.hasSurface(id)) ShellState.toggleSurface("plugin:" + id)
+        }
+        function close(): void {
+            if (ShellState.activeSurface.indexOf("plugin:") === 0) ShellState.closeSurfaces()
+        }
+        function reload(): void { PluginService.refresh() }
+        function setEnabled(id: string, enabled: bool): void { PluginService.setEnabled(id, enabled) }
+        function openFolder(): void { PluginService.openFolder() }
     }
 
     IpcHandler {
@@ -197,6 +241,17 @@ ShellRoot {
         function setMode(mode: string): void { Theme.set("mode", mode) }
         function toggleMode(): void { Theme.set("mode", ThemeSettings.wantedMode === "light" ? "dark" : "light") }
         function setTransition(style: string): void { Theme.set("transition", style) }
+    }
+
+    // qs ipc call session apply|lock|suspend|logout|reboot|poweroff
+    IpcHandler {
+        target: "session"
+        function apply(): void { SessionService.apply() }
+        function lock(): void { Quickshell.execDetached(["python3", SessionService.helper, "lock"]) }
+        function suspend(): void { Quickshell.execDetached(["python3", SessionService.helper, "suspend"]) }
+        function logout(): void { Quickshell.execDetached(["python3", SessionService.helper, "logout"]) }
+        function reboot(): void { Quickshell.execDetached(["python3", SessionService.helper, "reboot"]) }
+        function poweroff(): void { Quickshell.execDetached(["python3", SessionService.helper, "poweroff"]) }
     }
 
     IpcHandler {

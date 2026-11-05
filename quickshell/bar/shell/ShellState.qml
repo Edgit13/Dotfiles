@@ -10,6 +10,9 @@ Singleton {
 
     property string activeSurface: "idle"
     property string activeMonitor: ""
+    // One-shot tab for the next MixerSurface instance (0 = main).
+    property int mixerTab: 0
+    signal openMixerTabRequested(int tab)
 
     signal openDashboardRequested(string monitor)
     signal toggleDashboardRequested(string monitor)
