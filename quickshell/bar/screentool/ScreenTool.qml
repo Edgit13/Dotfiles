@@ -13,9 +13,11 @@ Item {
     id: root
 
     property bool active: false
+    property string intent: ""          // "" | "ocr" | "lens" — run on region release
 
-    function start()   { active = true }
-    function dismiss() { active = false; busy = false }
+    function start()   { intent = ""; active = true }
+    function startWith(kind) { intent = kind; active = true }
+    function dismiss() { active = false; busy = false; intent = "" }
     function toggle()  { active ? dismiss() : start() }
 
     property string mode: "region"      // region | screen
@@ -25,11 +27,47 @@ Item {
     property bool busy: false
     readonly property string recAudio: RecordService.optAudio      // system | mic | none (Settings → Запис екрана)
 
-    readonly property string saveDir: Quickshell.env("HOME") + "/Pictures/Screenshots"
+    readonly property string saveDir: String(Settings.get("capture", "screenshotDir")
+        || (Quickshell.env("HOME") + "/Pictures/Screenshots")).replace("~", Quickshell.env("HOME"))
+
+    // Capture settings (Settings → Capture & recording)
+    readonly property string ocrLang:       String(Settings.get("capture", "ocrLang") || "eng")
+    readonly property bool   ocrSingleLine: Settings.get("capture", "ocrSingleLine") === true
+    readonly property bool   ocrRaw:        Settings.get("capture", "ocrRaw") === true
+    readonly property bool   ocrNotify:     Settings.get("capture", "ocrNotify") !== false
+    readonly property string lensOpen:      String(Settings.get("capture", "lensOpen") || "newtab")
+    readonly property string lensBrowser:   String(Settings.get("general", "browser") || "firefox").split("/").pop()
+
+    Ocr  { id: ocr }
+    Lens { id: lens; bgColor: M3.surfaceContainerHigh; fgColor: M3.fgSurface }
 
     Process {
         id: proc
         onExited: { root.busy = false; root.active = false }
+    }
+
+    // OCR / Lens run after the overlay closes; they must not touch the capture state.
+    Process { id: actionProc }
+
+    function runOcr(image, x, y, w, h) {
+        if (w < 2 || h < 2) return
+        dismiss()
+        actionProc.command = ["sh", "-c",
+            ocr.getCommand(image, Math.round(x), Math.round(y), Math.round(w), Math.round(h),
+                           ocrSingleLine, ocrRaw, ocrLang, ocrNotify)]
+        actionProc.running = true
+    }
+
+    function runLens(image, x, y, w, h) {
+        if (w < 2 || h < 2) return
+        dismiss()
+        const ts = Date.now()
+        const jpg = "/tmp/edots-lens-" + ts + ".jpg"
+        const html = "/tmp/edots-lens-" + ts + ".html"
+        actionProc.command = ["sh", "-c",
+            lens.getCommand(image, jpg, html, Math.round(x), Math.round(y), Math.round(w), Math.round(h),
+                            lensOpen, lensBrowser)]
+        actionProc.running = true
     }
 
     function _q()   { return String.fromCharCode(34) }   // "  (без \ в QML-джерелі)
@@ -85,6 +123,30 @@ Item {
             readonly property real sw: Math.abs(x2 - x1)
             readonly property real sh: Math.abs(y2 - y1)
             readonly property bool showSel: root.mode === "region" && hasSel
+            // grim -o writes the physical pixels; the overlay works in logical ones.
+            readonly property real shotScale: (shotImage.sourceSize.width > 0 && canvas.width > 0)
+                ? shotImage.sourceSize.width / canvas.width
+                : 1
+
+            function selectionRect() {
+                if (root.mode === "screen")
+                    return { x: 0, y: 0,
+                             w: shotImage.sourceSize.width > 0 ? shotImage.sourceSize.width : screen.width,
+                             h: shotImage.sourceSize.height > 0 ? shotImage.sourceSize.height : screen.height }
+                if (!hasSel) return null
+                const k = shotScale
+                return { x: sx * k, y: sy * k, w: sw * k, h: sh * k }
+            }
+
+            function doOcr() {
+                const r = selectionRect()
+                if (r) root.runOcr(shotPath, r.x, r.y, r.w, r.h)
+            }
+
+            function doLens() {
+                const r = selectionRect()
+                if (r) root.runLens(shotPath, r.x, r.y, r.w, r.h)
+            }
 
             function doCapture() {
                 if (!(root.toFile || root.toClipboard)) return
@@ -137,11 +199,16 @@ Item {
                 Keys.onEscapePressed: root.dismiss()
                 Keys.onReturnPressed: win.doCapture()
                 Keys.onEnterPressed: win.doCapture()
-                Keys.onPressed: e => { if (e.key === Qt.Key_R) { win.doRecord(); e.accepted = true } }
+                Keys.onPressed: e => {
+                    if (e.key === Qt.Key_R) { win.doRecord(); e.accepted = true }
+                    else if (e.key === Qt.Key_O) { win.doOcr(); e.accepted = true }
+                    else if (e.key === Qt.Key_L) { win.doLens(); e.accepted = true }
+                }
 
                 onVisibleChanged: if (visible) canvas.forceActiveFocus()
 
                 Image {
+                    id: shotImage
                     anchors.fill: parent
                     source: win.ready ? "file://" + win.shotPath : ""
                     cache: false
@@ -218,6 +285,8 @@ Item {
                             win.dragging = false
                         }
                         op = ""
+                        if (root.intent === "ocr") win.doOcr()
+                        else if (root.intent === "lens") win.doLens()
                     }
                     onDoubleClicked: mouse => { if (inside(mouse.x, mouse.y)) win.doCapture() }
                 }
@@ -301,8 +370,8 @@ Item {
                         font.family: M3.nothing ? M3.monoFont : Qt.application.font.family
                         font.letterSpacing: M3.nothing ? 1.5 : 0
                         text: root.mode === "screen"
-                              ? "Entire screen  ·  Enter capture  ·  R record  ·  Esc cancel"
-                              : "Drag to select  ·  Enter capture  ·  R record  ·  Esc cancel"
+                              ? "Entire screen  ·  Enter capture  ·  O OCR  ·  L lens  ·  R record  ·  Esc cancel"
+                              : "Drag to select  ·  Enter capture  ·  O OCR  ·  L lens  ·  R record  ·  Esc cancel"
                     }
                 }
 
@@ -353,6 +422,16 @@ Item {
                             label: "Save"; icon: "save"
                             toggled: root.toFile
                             onClicked: root.toFile = !root.toFile
+                        }
+                        MButton {
+                            label: "OCR"; icon: "document_scanner"
+                            enabled: root.mode === "screen" || win.hasSel
+                            onClicked: win.doOcr()
+                        }
+                        MButton {
+                            label: "Lens"; icon: "image_search"
+                            enabled: root.mode === "screen" || win.hasSel
+                            onClicked: win.doLens()
                         }
                         MButton {
                             label: root.delaySec === 0 ? "Timer" : root.delaySec + "s"

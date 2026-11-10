@@ -6,9 +6,10 @@ import QtQuick
 import QtQuick.Layouts
 
 // NotificationCard — M3 Expressive картка сповіщення (спливаюча і в центрі).
-//  • свайп вбік — прибрати; тап — дія за замовчуванням / розгорнути
-//  • popup: тінь, прогрес таймера внизу, пауза при hover; critical — errorContainer
-//  • topR/bottomR — радіуси для «connected list» у центрі
+//  • свайп ліворуч — прибрати; свайп праворуч — закріпити (у центрі) / відкласти (у попапі)
+//  • тап — дія за замовчуванням / розгорнути
+//  • швидкі дії: закріпити, відкласти, копіювати, вимкнути застосунок, закрити
+//  • popup: тінь, прогрес таймера, пауза при hover; critical — errorContainer + акцентна смуга
 Item {
     id: card
 
@@ -19,13 +20,21 @@ Item {
     property real bottomR: Theme.shape.cardLarge
     signal removed()
 
-    implicitWidth: Theme.components.dp(380)
-    implicitHeight: surface.height
-
     readonly property bool critical: notif.urgency === 2
+    readonly property bool pinned: !!notif.pinned
+    readonly property bool muted: NotificationService.appMuted(card.notif)
+    readonly property bool unread: !notif.read
+    readonly property string appKey: NotificationService.appKey(card.notif)
+    readonly property real pad: NotificationService.densePad
+    readonly property real iconPx: Math.max(28, NotificationService.iconSize)
+    readonly property bool accented: NotificationService.accent && (card.critical || card.pinned)
+
+    implicitWidth: NotificationService.cardWidth
+    implicitHeight: surface.height
 
     // у popup показуємо всі дії крім default (він = тап); у центрі — усі
     readonly property var shownActions: {
+        if (!NotificationService.showActions) return []
         const out = []
         for (let i = 0; i < notif.actions.length; i++) {
             const a = notif.actions[i]
@@ -35,17 +44,27 @@ Item {
         return out
     }
 
+    property bool copied: false
+    Timer { id: copiedTimer; interval: 1200; onTriggered: card.copied = false }
+
     function activate() {
+        NotificationService.markRead(notif)
         if (card.popup) {
             if (notif.hasDefault()) { notif.invoke("default"); card.removed() }
             else notif.popup = false                 // сховати у центр
         } else card.expanded = !card.expanded
     }
     function release() {
-        if (Math.abs(surface.x) > surface.width * 0.32) {
+        const w = Math.max(1, surface.width)
+        if (surface.x < -w * 0.28) {
             surface.flying = true
-            flyOut.to = (surface.x > 0 ? 1 : -1) * surface.width * 1.15
+            flyOut.to = -w * 1.15
             flyOut.start()
+        } else if (surface.x > w * 0.28) {
+            // праворуч: попап — відкласти, центр — закріпити
+            if (card.popup) NotificationService.snooze(notif)
+            else NotificationService.togglePin(notif)
+            surface.x = 0
         } else surface.x = 0
     }
 
@@ -61,8 +80,8 @@ Item {
         height: bg.height
         property bool flying: false
         readonly property real swipe: Math.max(-1, Math.min(1, x / Math.max(1, width)))
-        opacity: 1 - Math.min(1, Math.abs(x) / (width * 0.9)) * 0.85
-        rotation: surface.swipe * 3.5
+        opacity: 1 - Math.min(1, Math.abs(x) / (width * 0.95)) * 0.8
+        rotation: surface.swipe * 2.5
         scale: drag.active ? 0.985 : 1
         transformOrigin: Item.Center
 
@@ -90,7 +109,7 @@ Item {
         Rectangle {
             id: bg
             width: parent.width
-            height: content.implicitHeight + Theme.space.md * 2
+            height: content.implicitHeight + card.pad * 2
             color: card.critical ? Theme.color.errorContainer : Theme.color.surfaceContainerHigh
             border.width: (Theme.settings.nothing && card.popup) ? ThemeNothing.hairline : 0
             border.color: card.critical ? Theme.color.error : Theme.color.outlineVariant
@@ -98,6 +117,7 @@ Item {
             topRightRadius: card.topR
             bottomLeftRadius: card.bottomR
             bottomRightRadius: card.bottomR
+            clip: true
             Behavior on color { MotionColorAnimation { role: "stateChange" } }
             Behavior on topLeftRadius { MotionAnimation { role: "morph" } }
             Behavior on topRightRadius { MotionAnimation { role: "morph" } }
@@ -105,23 +125,36 @@ Item {
             Behavior on bottomRightRadius { MotionAnimation { role: "morph" } }
             Behavior on height { MotionAnimation { role: "morph" } }
 
+            // акцентна смуга важливості / закріплення
+            Rectangle {
+                visible: card.accented
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                width: Theme.components.dp(4)
+                color: card.critical ? Theme.color.error
+                     : (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.primary)
+                opacity: 0.95
+            }
+
             ColumnLayout {
                 id: content
                 anchors {
                     left: parent.left
                     right: parent.right
                     top: parent.top
-                    margins: Theme.space.md
+                    leftMargin: card.pad + (card.accented ? Theme.components.dp(6) : 0)
+                    rightMargin: card.pad
+                    topMargin: card.pad
                 }
-                spacing: Theme.space.sm
+                spacing: NotificationService.denseGap
 
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: Theme.space.sm
 
                     NotifIcon {
-                        Layout.preferredWidth: Theme.components.dp(36)
-                        Layout.preferredHeight: Theme.components.dp(36)
+                        Layout.preferredWidth: card.iconPx
+                        Layout.preferredHeight: card.iconPx
+                        Layout.maximumWidth: card.iconPx
                         Layout.alignment: Qt.AlignTop
                         notif: card.notif
                         critical: card.critical
@@ -129,11 +162,20 @@ Item {
 
                     ColumnLayout {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         spacing: 2
 
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: Theme.space.xs
+
+                            Rectangle {
+                                visible: card.unread
+                                implicitWidth: Theme.components.dp(7)
+                                implicitHeight: implicitWidth
+                                radius: width / 2
+                                color: card.critical ? Theme.color.error : Theme.color.primary
+                            }
                             ThemedText {
                                 Layout.fillWidth: true
                                 text: card.notif.appName
@@ -141,7 +183,14 @@ Item {
                                 color: card.critical ? Theme.color.fgErrorContainer : Theme.color.fgSurfaceVariant
                                 elide: Text.ElideRight
                             }
+                            Text {
+                                visible: card.pinned
+                                text: "\ue840"      // push_pin
+                                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                                color: card.critical ? Theme.color.fgErrorContainer : Theme.color.primary
+                            }
                             ThemedText {
+                                visible: !(card.popup && hover.hovered)
                                 text: NotificationService.rel(card.notif.time)
                                 style: Theme.type.labelSmall
                                 color: card.critical ? Theme.color.fgErrorContainer : Theme.color.fgSurfaceVariant
@@ -155,7 +204,7 @@ Item {
                             emphasized: true
                             color: card.critical ? Theme.color.fgErrorContainer : Theme.color.fgSurface
                             elide: Text.ElideRight
-                            maximumLineCount: card.expanded ? 3 : 1
+                            maximumLineCount: card.expanded ? 4 : 2
                             wrapMode: Text.Wrap
                         }
                         ThemedText {
@@ -168,51 +217,58 @@ Item {
                             linkColor: Theme.color.primary
                             wrapMode: Text.Wrap
                             elide: Text.ElideRight
-                            maximumLineCount: card.expanded ? 14 : 2
+                            maximumLineCount: card.expanded ? 16 : 2
                             onLinkActivated: link => Qt.openUrlExternally(link)
                         }
                     }
 
-                    // закрити
-                    Rectangle {
-                        id: closeBtn
-                        Layout.preferredWidth: Theme.components.dp(26)
-                        Layout.preferredHeight: Theme.components.dp(26)
+                    // швидкі дії в центрі (у поп-апі — компактний оверлей нижче)
+                    Column {
+                        visible: !card.popup
                         Layout.alignment: Qt.AlignTop
-                        radius: closeMa.pressed ? Theme.shape.iconButtonPressed : height / 2
-                        color: "transparent"
-                        opacity: card.popup ? (hover.hovered ? 1 : 0) : 0.8
-                        scale: closeMa.pressed ? 0.9 : 1
-                        Behavior on radius { MotionAnimation { role: "morph" } }
-                        Behavior on opacity { MotionAnimation { role: "hover" } }
-                        Behavior on scale { MotionAnimation { role: "press" } }
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: parent.radius
-                            color: Theme.color.fgSurface
-                            opacity: closeMa.pressed ? Theme.components.statePressed
-                                   : closeMa.containsMouse ? Theme.components.stateHover : 0
+                        Layout.preferredWidth: Theme.components.dp(26)
+                        Layout.maximumWidth: Theme.components.dp(26)
+                        spacing: 2
+
+                        QuickAction {
+                            glyph: card.pinned ? "\ue840" : "\ue840"
+                            tip: card.pinned ? Lang.t("ui.notif.unpin") : Lang.t("ui.notif.pin")
+                            active: card.pinned
+                            onActivated: NotificationService.togglePin(card.notif)
                         }
-                        Text {
-                            anchors.centerIn: parent
-                            text: "\ue5cd"
-                            color: card.critical ? Theme.color.fgErrorContainer : Theme.color.fgSurfaceVariant
-                            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                        QuickAction {
+                            glyph: card.copied ? "\ue5ca" : "\ue14d"   // check / content_copy
+                            tip: Lang.t("ui.notif.copy")
+                            active: card.copied
+                            onActivated: {
+                                NotificationService.copy(card.notif)
+                                card.copied = true
+                                copiedTimer.restart()
+                            }
                         }
-                        MouseArea {
-                            id: closeMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: card.removed()
+                        QuickAction {
+                            glyph: card.muted ? "\ue04f" : "\ue04f"   // volume_off
+                            tip: card.muted ? Lang.t("ui.notif.unmuteApp") : Lang.t("ui.notif.muteApp")
+                            active: card.muted
+                            onActivated: NotificationService.toggleMuteApp(card.appKey)
+                        }
+                        QuickAction {
+                            glyph: "\ue8b5"                           // schedule
+                            tip: Lang.t("ui.notif.snooze")
+                            onActivated: NotificationService.snooze(card.notif)
+                        }
+                        QuickAction {
+                            glyph: "\ue5cd"                           // close
+                            tip: Lang.t("ui.notif.remove")
+                            onActivated: card.removed()
                         }
                     }
                 }
 
-                // дії
+                // дії застосунку
                 Flow {
                     Layout.fillWidth: true
-                    Layout.leftMargin: Theme.components.dp(36) + Theme.space.sm
+                    Layout.leftMargin: card.iconPx + Theme.space.sm
                     visible: card.shownActions.length > 0
                     spacing: Theme.space.xs
 
@@ -247,10 +303,99 @@ Item {
                                 anchors.fill: parent
                                 hoverEnabled: true
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: { card.notif.invoke(act.modelData.id); card.removed() }
+                                onClicked: {
+                                    NotificationService.markRead(card.notif)
+                                    card.notif.invoke(act.modelData.id)
+                                    card.removed()
+                                }
                             }
                         }
                     }
+                }
+
+                // підпис стану
+                RowLayout {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: card.iconPx + Theme.space.sm
+                    visible: card.pinned || card.muted || card.notif.snoozedUntil > 0
+                    spacing: Theme.space.xs
+                    ThemedText {
+                        visible: card.pinned
+                        text: Lang.t("ui.notif.pinnedTag")
+                        style: Theme.type.labelSmall
+                        color: card.critical ? Theme.color.fgErrorContainer : Theme.color.primary
+                    }
+                    ThemedText {
+                        visible: card.muted
+                        text: "· " + Lang.t("ui.notif.muteApp")
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSurfaceVariant
+                    }
+                    ThemedText {
+                        visible: card.notif.snoozedUntil > 0
+                        text: "· " + Lang.t("ui.notif.snoozed")
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSurfaceVariant
+                    }
+                }
+            }
+
+            // швидкі дії в поп-апі — оверлей поверх картки, не збільшує її висоту
+            Rectangle {
+                id: popupActionsBg
+                visible: card.popup
+                anchors.fill: popupActionsRow
+                anchors.margins: -Theme.space.xs
+                radius: height / 2
+                color: card.critical ? Theme.color.errorContainer : Theme.color.surfaceContainerHigh
+                border.width: Theme.settings.nothing ? ThemeNothing.hairline : 0
+                border.color: Theme.color.outlineVariant
+                opacity: hover.hovered ? 0.97 : 0
+                Behavior on opacity { MotionAnimation { role: "hover" } }
+            }
+            Row {
+                id: popupActionsRow
+                visible: card.popup
+                enabled: hover.hovered
+                anchors.top: bg.top
+                anchors.right: bg.right
+                anchors.topMargin: card.pad - 4
+                anchors.rightMargin: card.pad - 4
+                spacing: 2
+                opacity: hover.hovered ? 1 : 0
+                Behavior on opacity { MotionAnimation { role: "hover" } }
+
+                QuickAction {
+                    glyph: "\ue840"      // push_pin
+                    tip: card.pinned ? Lang.t("ui.notif.unpin") : Lang.t("ui.notif.pin")
+                    active: card.pinned
+                    onActivated: NotificationService.togglePin(card.notif)
+                }
+                QuickAction {
+                    glyph: card.copied ? "\ue5ca" : "\ue14d"   // check / content_copy
+                    tip: Lang.t("ui.notif.copy")
+                    active: card.copied
+                    onActivated: {
+                        NotificationService.copy(card.notif)
+                        card.copied = true
+                        copiedTimer.restart()
+                    }
+                }
+                QuickAction {
+                    glyph: "\ue04f"      // volume_off
+                    tip: card.muted ? Lang.t("ui.notif.unmuteApp") : Lang.t("ui.notif.muteApp")
+                    active: card.muted
+                    onActivated: NotificationService.toggleMuteApp(card.appKey)
+                }
+                QuickAction {
+                    glyph: "\ue8b5"      // schedule
+                    tip: Lang.t("ui.notif.snooze")
+                    onActivated: NotificationService.snooze(card.notif)
+                }
+                QuickAction {
+                    glyph: "\ue5cd"      // close
+                    tip: Lang.t("ui.notif.remove")
+                    onActivated: card.removed()
                 }
             }
 
@@ -258,7 +403,7 @@ Item {
             Rectangle {
                 visible: card.popup && card.notif.totalMs > 0
                 anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.components.dp(5)
+                anchors.bottomMargin: Theme.components.dp(4)
                 x: Theme.space.lg
                 height: Theme.components.dp(card.notif.paused ? 4 : 3)
                 radius: height / 2
@@ -269,6 +414,42 @@ Item {
                 Behavior on opacity { MotionAnimation { role: "hover" } }
                 Behavior on width { NumberAnimation { duration: 40 } }
             }
+        }
+    }
+
+    // маленька кнопка швидкої дії
+    component QuickAction: Rectangle {
+        id: qa
+        property string glyph: ""
+        property string tip: ""
+        property bool active: false
+        signal activated()
+
+        implicitWidth: Theme.components.dp(26)
+        implicitHeight: implicitWidth
+        width: implicitWidth
+        height: implicitHeight
+        radius: qaMa.pressed ? Theme.shape.iconButtonPressed : height / 2
+        color: qa.active ? Qt.rgba(Theme.color.primary.r, Theme.color.primary.g, Theme.color.primary.b, 0.14)
+             : (qaMa.containsMouse ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.08) : "transparent")
+        scale: qaMa.pressed ? 0.9 : 1
+        Behavior on radius { MotionAnimation { role: "morph" } }
+        Behavior on color { MotionColorAnimation { role: "hover" } }
+        Behavior on scale { MotionAnimation { role: "press" } }
+
+        Text {
+            anchors.centerIn: parent
+            text: qa.glyph
+            color: qa.active ? Theme.color.primary
+                 : (card.critical ? Theme.color.fgErrorContainer : Theme.color.fgSurfaceVariant)
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+        }
+        MouseArea {
+            id: qaMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: qa.activated()
         }
     }
 }

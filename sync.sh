@@ -124,7 +124,7 @@ cmd_install() {
   echo
   echo "── scripts +x ──"
   run chmod +x "$REPO_DIR"/quickshell/bar/reload.sh 2>/dev/null || true
-  run chmod +x "$REPO_DIR"/quickshell/lockscreen/*.sh 2>/dev/null || true
+  run chmod +x "$REPO_DIR"/quickshell/bar/lockscreen/*.sh 2>/dev/null || true
   run chmod +x "$REPO_DIR"/quickshell/scripts/*.sh 2>/dev/null || true
   run chmod +x "$REPO_DIR"/mango/scripts/*.sh 2>/dev/null || true
   # every helper we expose via /usr/local/bin must be executable

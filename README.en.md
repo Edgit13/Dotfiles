@@ -27,6 +27,11 @@ Material 3 Expressive and Nothing — two designs, one wallpaper palette.
 <img src="screenshots/Bar-Nothing.png" alt="Edots bar — Nothing" width="100%">
 <sub><b>Nothing</b> — monochrome, dot-matrix rings, one red accent</sub>
 
+<br><br>
+
+<img src="screenshots/Bar-Islands.png" alt="Edots bar — Islands" width="100%">
+<sub><b>Islands</b> — three floating capsules: control · workspaces + clock · tray</sub>
+
 </div>
 
 <br>
@@ -43,14 +48,18 @@ wallpaper repaints the bar, GTK, terminals, Firefox, rofi and KDE.
 | | |
 |---|---|
 | 🎨 **Two designs** | Material 3 Expressive and Nothing, light and dark, switchable live. |
-| 🧩 **Modular bar** | Any edge, per monitor, with modules you can toggle and reorder. |
-| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio, display, Wi-Fi, media, power, keybinds. |
+| 🧩 **Modular bar** | Full strip, compact pill or three floating islands, on any edge and per monitor. In Morph mode the panel grows out of the bar — from the clicked module, the pill itself, or each island capsule independently. |
+| 🔔 **Notifications** | Own daemon: popups, center, unread state, pin, snooze, per-app mute, search, filters, copy, clear-read and Do Not Disturb. |
+| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio, display, Wi-Fi, media, power, updates, keybinds. |
 | 🔎 **Advanced launcher** | Apps, files, calculator, emoji and shell commands in one field. |
 | 📊 **Dashboard** | Weather, resources, media, workspaces and a planner. |
 | 🎚 **Audio studio** | 10-band EQ, presets, bypass and RNNoise mic cleanup via EasyEffects. |
 | 🔀 **Per-app audio** | Per-app volume, mute and pinned output devices. |
 | 🖥 **Display centre** | Resolution, refresh, scale, rotation and layout with an 18-second safety rollback. |
-| 🔒 **Lock screen** | Quickshell + PAM, ken burns, parallax, power menu, lock-before-suspend. |
+| 🎥 **Screen tools** | Screenshot, region OCR, Google Lens and recording in the bar. |
+| 🌙 **Night light** | Warm the screen with `gammastep` — manual or a sunrise/sunset schedule. |
+| ⬆️ **Update centre** | Non-locking repo/AUR/Flatpak check; updates run in a terminal. |
+| 🔒 **Lock screen** | Quickshell + PAM, ken burns, parallax, power menu, lock-before-suspend, optional Face ID. |
 | 🌙 **Idle & session** | Lock, display-off and suspend timers written live to `swayidle`. |
 | 🧱 **Plugins** | Drop in a folder with `plugin.json` for a panel, a bar module, or both. |
 | 🩺 **`edots` CLI** | Every surface plus `edots doctor` for a full health check. |

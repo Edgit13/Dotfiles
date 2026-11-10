@@ -35,7 +35,7 @@ in
     xdg.configFile."fastfetch".source = repo + "/fastfetch";
     xdg.configFile."gtk-3.0".source = repo + "/gtk-3.0";
     xdg.configFile."gtk-4.0".source = repo + "/gtk-4.0";
-    xdg.configFile."swaylock".source = repo + "/swaylock";
+    xdg.configFile."swaylock".source = repo + "/mango/swaylock";
     xdg.configFile."firefox/chrome".source = repo + "/firefox/chrome";
 
     home.file.".config/kdeglobals".source = repo + "/kdeglobals";

@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/lockscreen"
 import "root:/theme"
 import "."
 import "material"
@@ -45,6 +46,37 @@ Item {
                 return entries[i].y
         return 0
     }
+
+    readonly property bool uk: Lang.current.indexOf("uk") === 0
+
+    // Кольорові іконки сторінок (dux-style): тональні пари з теми, по колу за індексом
+    function accentBg(i) {
+        const c = Theme.color
+        return [c.primaryContainer, c.tertiaryContainer, c.successContainer, c.warningContainer, c.errorContainer][((i % 5) + 5) % 5]
+    }
+    function accentFg(i) {
+        const c = Theme.color
+        return [c.fgPrimaryContainer, c.fgTertiaryContainer, c.fgSuccessContainer, c.fgWarningContainer, c.fgErrorContainer][((i % 5) + 5) % 5]
+    }
+
+    // Пошук по ВСІХ сторінках: секції з уже відфільтрованими полями + заголовок «Сторінка · Секція»
+    readonly property var searchSections: {
+        if (!SettingsSearch.active) return []
+        const out = []
+        for (let i = 0; i < Schema.pages.length; i++) {
+            const secs = Settings.sectionsForPage(i)
+            for (let j = 0; j < secs.length; j++) {
+                const f = secs[j].fields.filter(x => SettingsSearch.matches(Lang.searchText(x.cat, x.key, x.field)))
+                if (f.length > 0)
+                    out.push({ cat: secs[j].cat, label: secs[j].label, fields: f,
+                               title: Lang.t(Schema.pages[i].name) + "  ·  " + Lang.t(secs[j].label) })
+            }
+        }
+        return out
+    }
+    readonly property int searchCount: searchSections.reduce((n, sec) => n + sec.fields.length, 0)
+
+    Shortcut { sequences: ["Ctrl+F"]; onActivated: search.forceActiveFocus() }
 
     function pageIndex(name: string): int {
         for (let i = 0; i < Schema.pages.length; i++)
@@ -186,13 +218,22 @@ Item {
                                         anchors.leftMargin: Theme.space.lg
                                         anchors.rightMargin: Theme.space.lg
                                         spacing: Theme.space.md
-                                        Text {
-                                            text: navEntry.modelData.page ? navEntry.modelData.page.icon : ""
-                                            color: navEntry.modelData.index === app.currentIndex
-                                                   ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer)
-                                                   : Theme.color.fgSurfaceVariant
-                                            font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
-                                            Behavior on color { MotionColorAnimation { role: "stateChange" } }
+                                        Rectangle {
+                                            id: navBadge
+                                            readonly property bool cur: navEntry.modelData.index === app.currentIndex
+                                            Layout.preferredWidth: Theme.components.dp(32)
+                                            Layout.preferredHeight: Theme.components.dp(32)
+                                            radius: cur ? Theme.shape.radius("md", height) : height / 2
+                                            color: Theme.settings.nothing ? "transparent" : app.accentBg(navEntry.modelData.index)
+                                            border.width: Theme.settings.nothing ? 1 : 0
+                                            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, cur ? 0.6 : 0.28)
+                                            Behavior on radius { MotionAnimation { role: "morph" } }
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: navEntry.modelData.page ? navEntry.modelData.page.icon : ""
+                                                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                                                color: Theme.settings.nothing ? Theme.color.fgSurface : app.accentFg(navEntry.modelData.index)
+                                            }
                                         }
                                         ThemedText {
                                             Layout.fillWidth: true
@@ -272,6 +313,12 @@ Item {
                             color: Theme.color.fgSurfaceVariant
                         }
                     }
+                    ThemedText {
+                        visible: SettingsSearch.active
+                        text: app.searchCount + (app.uk ? " знайдено" : " found")
+                        style: Theme.type.labelMedium
+                        color: Theme.color.fgSurfaceVariant
+                    }
                     MaterialIconButton {
                         icon: "close"
                         visible: search.text.length > 0
@@ -302,8 +349,69 @@ Item {
                     y: Theme.space.sm
                     spacing: Theme.space.md
 
+                    // ── page header ──
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Layout.topMargin: Theme.space.sm
+                        Layout.leftMargin: Theme.space.md
+                        spacing: Theme.space.md
+                        visible: !SettingsSearch.active && app.currentIndex !== app.aboutPageIndex
+
+                        Rectangle {
+                            Layout.preferredWidth: Theme.components.dp(48)
+                            Layout.preferredHeight: Theme.components.dp(48)
+                            radius: Theme.shape.radius("lg", height)
+                            color: Theme.settings.nothing ? "transparent" : app.accentBg(app.currentIndex)
+                            border.width: Theme.settings.nothing ? 1 : 0
+                            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
+                            Text {
+                                anchors.centerIn: parent
+                                text: Schema.pages[app.currentIndex] ? Schema.pages[app.currentIndex].icon : ""
+                                font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
+                                color: Theme.settings.nothing ? Theme.color.fgSurface : app.accentFg(app.currentIndex)
+                            }
+                        }
+                        ThemedText {
+                            Layout.fillWidth: true
+                            text: Schema.pages[app.currentIndex] ? Lang.t(Schema.pages[app.currentIndex].name) : ""
+                            style: Theme.type.headlineSmall
+                            emphasized: true
+                            font.family: Theme.settings.nothing ? Theme.type.dot : style.family
+                        }
+                    }
+
+                    // ── редактор локскріну: прев'ю + віджети ──
+                    Loader {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: item ? item.implicitHeight : 0
+                        active: !SettingsSearch.active && Schema.pages[app.currentIndex] !== undefined
+                                && Schema.pages[app.currentIndex].name === "page.lockscreen"
+                        visible: active
+                        sourceComponent: Component { LockEditor { } }
+                    }
+
+                    // ── нічого не знайдено ──
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.topMargin: Theme.space.xxl
+                        visible: SettingsSearch.active && app.searchSections.length === 0
+                        spacing: Theme.space.sm
+                        Text {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: "search_off"
+                            font { family: Theme.type.icons; pixelSize: Theme.type.iconXL }
+                            color: Theme.color.fgSurfaceVariant
+                        }
+                        ThemedText {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: app.uk ? "Нічого не знайдено" : "No settings found"
+                            style: Theme.type.titleMedium
+                            color: Theme.color.fgSurfaceVariant
+                        }
+                    }
+
                     Repeater {
-                        model: Settings.sectionsForPage(app.currentIndex)
+                        model: SettingsSearch.active ? app.searchSections : Settings.sectionsForPage(app.currentIndex)
 
                         ColumnLayout {
                             id: sectionWrap
@@ -315,7 +423,7 @@ Item {
                                 Layout.fillWidth: true
                                 Layout.topMargin: Theme.space.md
                                 Layout.leftMargin: Theme.space.md
-                                text: Lang.t(sectionWrap.modelData.label).toUpperCase()
+                                text: (sectionWrap.modelData.title || Lang.t(sectionWrap.modelData.label)).toUpperCase()
                                 style: Theme.type.labelMedium
                                 emphasized: true
                                 color: Theme.color.primary
@@ -356,7 +464,11 @@ Item {
                                         Layout.fillWidth: true
                                         visible: shown
                                         implicitHeight: sr.implicitHeight + Theme.space.md * 2
-                                        color: Theme.color.surfaceContainer
+                                        color: rowHover.hovered
+                                            ? Theme.stateLayer(Theme.color.surfaceContainer, Theme.color.fgSurface, Theme.components.stateHover)
+                                            : Theme.color.surfaceContainer
+                                        Behavior on color { MotionColorAnimation { role: "hover" } }
+                                        HoverHandler { id: rowHover }
 
                                         topLeftRadius: isFirst ? big : small
                                         topRightRadius: isFirst ? big : small
@@ -390,14 +502,14 @@ Item {
                     PagePlugins {
                         Layout.fillWidth: true
                         Layout.preferredHeight: visible ? Math.max(560, flick.height - Theme.space.xl * 2) : 0
-                        visible: app.currentIndex === app.pluginsPageIndex
+                        visible: app.currentIndex === app.pluginsPageIndex && !SettingsSearch.active
                     }
 
                     // ───────── Wallpapers color categorization ─────────
                     Item {
                         Layout.fillWidth: true
                         implicitHeight: visible ? Math.max(520, flick.height - Theme.space.xl * 2) : 0
-                        visible: app.currentIndex === app.wallpapersPageIndex
+                        visible: app.currentIndex === app.wallpapersPageIndex && !SettingsSearch.active
                         PageWallpapers { anchors.fill: parent }
                     }
 
@@ -405,7 +517,7 @@ Item {
                     ColumnLayout {
                         id: aboutPage
                         Layout.fillWidth: true
-                        visible: app.currentIndex === app.aboutPageIndex
+                        visible: app.currentIndex === app.aboutPageIndex && !SettingsSearch.active
                         spacing: Theme.space.lg
 
                         ThemedText {
@@ -1015,10 +1127,10 @@ Item {
 
                             Repeater {
                                 model: [
-                                    { label: "Settings window", cmd: "qs ipc call settingsapp toggle" },
-                                    { label: "Bar position",    cmd: "qs ipc call bar setPosition top" },
-                                    { label: "Lock screen",     cmd: "qs -p lockscreen/shell.qml" },
-                                    { label: "Dashboard",       cmd: "qs ipc call dashboard toggle" }
+                                    { label: Lang.t("about.cmd.settings"),  cmd: "qs ipc call settingsapp toggle" },
+                                    { label: Lang.t("about.cmd.bar"),       cmd: "qs ipc call bar setPosition top" },
+                                    { label: Lang.t("about.cmd.lock"),      cmd: "qs -p lockscreen/shell.qml" },
+                                    { label: Lang.t("about.cmd.dashboard"), cmd: "qs ipc call dashboard toggle" }
                                 ]
 
                                 Rectangle {

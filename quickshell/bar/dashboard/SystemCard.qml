@@ -4,17 +4,21 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-// SystemCard — OS / WM / uptime. Brightness живе в окремій BrightnessCard,
-// яка містить єдиний BrightnessManager (керує і brightnessctl, і DDC/CI).
+// SystemCard — аватар, user @ host, ОС, чіпи WM + uptime.
 DashCard {
     id: root
 
     property string osName: "Linux"
     property string wmName: "MangoWC"
     property string uptimeText: "—"
+    property string hostName: ""
+    readonly property string userName: Quickshell.env("USER") || "user"
 
     function _fmtUptime(sec) {
-        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60)
+        const d = Math.floor(sec / 86400)
+        const h = Math.floor((sec % 86400) / 3600)
+        const m = Math.floor((sec % 3600) / 60)
+        if (d > 0) return d + " д " + h + " год"
         if (h > 0) return h + " год " + m + " хв"
         return m + " хв"
     }
@@ -25,36 +29,50 @@ DashCard {
         stdout: StdioCollector { onStreamFinished: if (text.trim().length > 0) root.osName = text.trim() }
     }
     Process {
+        id: hostProc
+        command: ["hostname"]
+        stdout: StdioCollector { onStreamFinished: root.hostName = text.trim() }
+    }
+    Process {
         id: upProc
-        command: ["sh", "-c", "cat /proc/uptime"]
+        command: ["cat", "/proc/uptime"]
         stdout: StdioCollector { onStreamFinished: root.uptimeText = root._fmtUptime(parseFloat(text.split(" ")[0])) }
     }
-    Timer { interval: 60000; running: true; repeat: true; triggeredOnStart: true; onTriggered: { osProc.running = true; upProc.running = true } }
+    Timer {
+        interval: 60000; running: true; repeat: true; triggeredOnStart: true
+        onTriggered: { osProc.running = true; upProc.running = true; if (!root.hostName) hostProc.running = true }
+    }
 
     RowLayout {
-        width: parent.width
-        height: implicitHeight
-        spacing: Theme.space.md
+        anchors.fill: parent
+        spacing: Theme.space.lg
 
-        DashAvatar { size: 56 }
+        DashAvatar { size: Theme.components.dp(72); Layout.alignment: Qt.AlignVCenter }
 
         ColumnLayout {
-            spacing: 2
             Layout.fillWidth: true
-            RowLayout {
-                spacing: Theme.space.xs
-                Text { text: "\uf1a0"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                ThemedText { text: root.osName; style: Theme.type.bodyMedium }
+            Layout.alignment: Qt.AlignVCenter
+            spacing: Theme.space.xs
+
+            ThemedText {
+                Layout.fillWidth: true
+                text: root.userName + (root.hostName ? " @ " + root.hostName : "")
+                style: Theme.type.titleLarge
+                emphasized: true
+                font.family: Theme.settings.nothing ? Theme.type.dot : style.family
+                elide: Text.ElideRight
             }
-            RowLayout {
-                spacing: Theme.space.xs
-                Text { text: "\ue30d"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                ThemedText { text: root.wmName; style: Theme.type.bodyMedium }
+            ThemedText {
+                Layout.fillWidth: true
+                text: root.osName
+                style: Theme.type.bodySmall
+                color: Theme.color.fgSurfaceVariant
+                elide: Text.ElideRight
             }
-            RowLayout {
+            Row {
                 spacing: Theme.space.xs
-                Text { text: "\ue425"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                ThemedText { text: root.uptimeText; style: Theme.type.bodyMedium }
+                InfoChip { icon: "\ue30d"; label: root.wmName }
+                InfoChip { icon: "\ue425"; label: root.uptimeText }
             }
         }
     }

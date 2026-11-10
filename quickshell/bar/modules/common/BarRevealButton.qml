@@ -43,7 +43,10 @@ BarModule {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.glyph
                 color: root.glyphColor
+                scale: btn.hovered ? 1.1 : 1.0
+                transformOrigin: Item.Center
                 Behavior on color { MotionColorAnimation { role: "hover" } }
+                Behavior on scale { MotionAnimation { role: "hover" } }
             }
             ThemedText {
                 id: labelItem
@@ -54,6 +57,10 @@ BarModule {
                 elide: Text.ElideRight
                 width: Math.min(implicitWidth, root.maxLabelWidth)
                 opacity: btn.hovered ? 1 : 0
+                transform: Translate {
+                    x: btn.hovered ? 0 : -Theme.space.xs
+                    Behavior on x { MotionAnimation { role: "hover" } }
+                }
                 Behavior on opacity { MotionAnimation { role: "hover" } }
             }
         }
@@ -67,6 +74,7 @@ BarModule {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.glyph
                 color: root.glyphColor
+                Behavior on color { MotionColorAnimation { role: "hover" } }
             }
             ThemedText {
                 visible: root.verticalLabel.length > 0

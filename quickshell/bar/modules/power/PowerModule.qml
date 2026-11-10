@@ -10,6 +10,8 @@ BarModule {
     signal powerRequested()
     signal settingsRequested()
 
+    animate: true
+
     BarButton {
         id: btn
         anchors.fill: parent

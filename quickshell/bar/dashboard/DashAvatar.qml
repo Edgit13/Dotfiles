@@ -43,6 +43,7 @@ Item {
         anchors.fill: parent
         radius: size / 2
         visible: false
+        layer.enabled: true
     }
     MultiEffect {
         anchors.fill: parent

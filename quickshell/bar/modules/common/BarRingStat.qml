@@ -42,5 +42,6 @@ Grid {
         color: root.vertical ? root.verticalTextColor : root.textColor
         elide: Text.ElideRight
         width: root.maxTextWidth > 0 ? Math.min(implicitWidth, root.maxTextWidth) : implicitWidth
+        Behavior on color { MotionColorAnimation { role: "stateChange" } }
     }
 }

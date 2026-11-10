@@ -12,6 +12,8 @@ BarModule {
 
     signal clicked()
 
+    animate: true
+
     SystemClock {
         id: sysClock
         precision: ClockSettings.showSeconds ? SystemClock.Seconds : SystemClock.Minutes

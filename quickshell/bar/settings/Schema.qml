@@ -45,8 +45,8 @@ Singleton {
             label: "section.bar",
             fields: {
                 position:    { type: "enum", options: ["top","bottom","left","right"], default: "top", label: "Position" },
-                style:       { type: "enum", options: ["full","pill"], default: "full", label: "Style", desc: "pill = compact island in the center" },
-                openMode:    { type: "enum", options: ["morph","window","spotlight","drawer"], default: "morph", label: "Open mode", desc: "How modules open: morph / window / spotlight / drawer" },
+                style:       { type: "enum", options: ["full","pill","islands"], default: "full", label: "Style", desc: "full = one strip · pill = compact island · islands = three floating capsules" },
+                openMode:    { type: "enum", options: ["morph","window","spotlight","drawer"], default: "morph", label: "Open mode", desc: "How modules open. Morph grows out of the bar — works on every style (full strip grows from the clicked module, pill from itself, each island capsule separately)." },
                 mode:        { type: "enum", options: ["compact","expanded","morphing"], default: "compact", label: "Mode" },
                 elevation:   { type: "num", min: 0, max: 5, step: 1, default: 1, label: "Elevation" },
                 mainMonitor: { type: "str", default: "", label: "Main monitor", desc: "Empty = first screen" },
@@ -129,7 +129,7 @@ Singleton {
             file: "bar.json",
             label: "section.modules",
             fields: {
-                order:         { type: "arr",  default: ["workspaces","clock","launcher","window","media","mixer","wifi","bluetooth","notifications","battery","power"], path: "modules.order", hidden: true },
+                order:         { type: "arr",  default: ["workspaces","clock","launcher","window","media","mixer","wifi","bluetooth","tray","notifications","battery","nightlight","power"], path: "modules.order", hidden: true },
                 workspaces:    { type: "bool", default: true, label: "Workspaces", path: "modules.workspaces" },
                 clock:         { type: "bool", default: true, label: "Clock", path: "modules.clock" },
                 launcher:      { type: "bool", default: true, label: "Launcher", path: "modules.launcher" },
@@ -139,8 +139,10 @@ Singleton {
                 mixer:         { type: "bool", default: true, label: "Volume", path: "modules.mixer" },
                 wifi:          { type: "bool", default: true, label: "Wi-Fi", path: "modules.wifi" },
                 bluetooth:     { type: "bool", default: true, label: "Bluetooth", path: "modules.bluetooth" },
+                tray:          { type: "bool", default: true, label: "Tray", path: "modules.tray" },
                 notifications: { type: "bool", default: true, label: "Notifications", path: "modules.notifications" },
                 battery:       { type: "bool", default: true, label: "Battery", path: "modules.battery" },
+                nightlight:    { type: "bool", default: true, label: "Night light", path: "modules.nightlight" },
                 power:         { type: "bool", default: true, label: "Power", path: "modules.power" }
             }
         },
@@ -170,7 +172,16 @@ Singleton {
                 width:      { type: "num", min: 280, max: 560, step: 10, default: 380, label: "Width", suffix: " px", path: "notif.width" },
                 timeout:    { type: "num", min: 1, max: 30, step: 1, default: 6, label: "Timeout (normal)", suffix: " s", path: "notif.timeout" },
                 timeoutLow: { type: "num", min: 1, max: 20, step: 1, default: 4, label: "Timeout (low)", suffix: " s", path: "notif.timeoutLow" },
-                maxVisible: { type: "num", min: 1, max: 8, step: 1, default: 4, label: "Max popups", path: "notif.maxVisible" }
+                maxVisible: { type: "num", min: 1, max: 8, step: 1, default: 4, label: "Max popups", path: "notif.maxVisible" },
+                history:    { type: "num", min: 10, max: 200, step: 10, default: 60, label: "History limit", desc: "How many notifications are kept in the center.", path: "notif.history" },
+                snooze:     { type: "num", min: 1, max: 120, step: 1, default: 15, label: "Snooze duration", suffix: " min", path: "notif.snooze" },
+                group:      { type: "bool", default: true, label: "Group by app", desc: "Stack notifications from the same app together.", path: "notif.group" },
+                actions:    { type: "bool", default: true, label: "Show action buttons", desc: "Inline buttons provided by the app.", path: "notif.actions" },
+                accent:     { type: "bool", default: true, label: "Urgency accent", desc: "Coloured edge for important and critical notifications.", path: "notif.accent" },
+                iconSize:   { type: "num", min: 28, max: 56, step: 2, default: 40, label: "Icon size", suffix: " px", path: "notif.iconSize" },
+                density:    { type: "enum", options: ["compact","normal","spacious"], default: "normal", label: "Card density", path: "notif.density" },
+                centerWidth:{ type: "num", min: 320, max: 560, step: 10, default: 460, label: "Center width", suffix: " px", path: "notif.centerWidth" },
+                muted:      { type: "arr", default: [], hidden: true, path: "notif.muted" }
             }
         },
         layout: {
@@ -206,6 +217,18 @@ Singleton {
                 mangohudDir:    { type: "str", default: "/tmp/MangoHud", label: "MangoHud log folder", desc: "output_folder in MangoHud.conf; logging must be on (autostart_log).", path: "gamemode.mangohudDir" }
             }
         },
+        capture: {
+            file: "capture.json",
+            label: "section.capture",
+            fields: {
+                ocrLang:       { type: "enum", default: "eng", options: ["eng", "ukr", "rus"], label: "OCR language", desc: "Tesseract language data must be installed (tesseract-data-eng/ukr/rus)." },
+                ocrSingleLine: { type: "bool", default: false, label: "OCR: single line", desc: "Join the recognised text into one line." },
+                ocrRaw:        { type: "bool", default: false, label: "OCR: keep line breaks", desc: "Do not re-flow paragraphs." },
+                ocrNotify:     { type: "bool", default: true, label: "Notify after OCR" },
+                lensOpen:      { type: "enum", default: "newtab", options: ["newtab", "sidebar"], label: "Lens opens in", desc: "newtab builds a local page and opens your browser; sidebar needs wlrctl + wtype and a browser keybind." },
+                screenshotDir: { type: "str", default: "~/Pictures/Screenshots", label: "Screenshot folder" }
+            }
+        },
         record: {
             file: "bar.json",
             label: "section.record",
@@ -215,6 +238,28 @@ Singleton {
                 encoder: { type: "enum", default: "software", options: ["software", "vaapi"], label: "Encoder", desc: "vaapi uses the GPU (h264_vaapi) — much lighter on the CPU.", path: "record.encoder" },
                 dir:     { type: "str", default: "~/Videos/Recordings", label: "Save folder", path: "record.dir" },
                 notify:  { type: "bool", default: true, label: "Notify when saved", desc: "With a thumbnail and Open / Show in folder / Copy path actions.", path: "record.notify" }
+            }
+        },
+        nightlight: {
+            file: "nightlight.json",
+            label: "section.nightlight",
+            fields: {
+                enabled:   { type: "bool", default: false, label: "Night light", desc: "Warm the screen with gammastep." },
+                mode:      { type: "enum", default: "manual", options: ["manual", "schedule"], label: "Mode", desc: "manual = fixed temperature; schedule = follow sunrise and sunset." },
+                temp:      { type: "num", min: 2000, max: 6500, step: 100, default: 4000, label: "Temperature", suffix: " K" },
+                dayTemp:   { type: "num", min: 2000, max: 6500, step: 100, default: 6500, label: "Day temperature", suffix: " K" },
+                nightTemp: { type: "num", min: 2000, max: 6500, step: 100, default: 4000, label: "Night temperature", suffix: " K" },
+                sunset:    { type: "str", default: "19:00", label: "Sunset", desc: "24-hour time, e.g. 19:30." },
+                sunrise:   { type: "str", default: "07:00", label: "Sunrise", desc: "24-hour time, e.g. 07:00." }
+            }
+        },
+        updates: {
+            file: "updates.json",
+            label: "section.updates",
+            fields: {
+                autoCheck:     { type: "bool", default: false, label: "Check for updates automatically", desc: "Uses checkupdates / yay -Qum / flatpak; never installs anything." },
+                intervalHours: { type: "num", min: 1, max: 48, step: 1, default: 6, label: "Check interval", suffix: " h" },
+                terminal:      { type: "str", default: "", label: "Terminal for updates", desc: "Empty = General → Terminal (e.g. ghostty)." }
             }
         },
         clock: {
@@ -233,18 +278,49 @@ Singleton {
             file: "lockscreen.json",
             label: "section.lockscreen",
             fields: {
-                enabled:        { type: "bool", default: true, label: "Use Edots lock screen" },
-                blurStrength:   { type: "num", min: 0, max: 1, step: 0.05, default: 0.35, label: "Blur strength" },
-                blurRadius:     { type: "num", min: 8, max: 128, step: 8, default: 32, label: "Blur radius", suffix: " px" },
-                scrimOpacity:   { type: "num", min: 0, max: 1, step: 0.05, default: 0.55, label: "Dim overlay" },
-                kenBurns:       { type: "bool", default: true, label: "Ken Burns zoom" },
-                parallax:       { type: "bool", default: true, label: "Mouse parallax" },
-                floatingShapes: { type: "bool", default: true, label: "Floating accent shapes" },
-                clockSize:      { type: "num", min: 60, max: 200, step: 4, default: 112, label: "Clock size", suffix: " px" },
-                greeting:       { type: "bool", default: true, label: "Show greeting pill" },
-                passwordStyle:  { type: "enum", options: ["dots","shapes","text"], default: "shapes", label: "Password style" },
-                powerButtons:   { type: "bool", default: true, label: "Power buttons" },
-                successFlash:   { type: "bool", default: true, label: "Success flash" }
+                // Порядок = порядок у налаштуваннях. Сусідні поля з однаковим
+                // group стають однією секцією; group — ключ перекладу в Lang.
+                enabled:        { type: "bool", default: true, group: "section.lock.general", label: "Use Edots lock screen" },
+                layout:         { type: "enum", options: ["center","top","bottom","left"], default: "center", group: "section.lock.general", label: "Layout", desc: "Where the clock and unlock block sit on the screen." },
+
+                clockStyle:     { type: "enum", options: ["split","solid","stacked"], default: "split", group: "section.lock.clock", label: "Clock style" },
+                clockWeight:    { type: "num", min: 100, max: 900, step: 100, default: 300, group: "section.lock.clock", label: "Clock weight" },
+                clockSize:      { type: "num", min: 80, max: 320, step: 8, default: 160, group: "section.lock.clock", label: "Clock size", suffix: " px" },
+                clock24h:       { type: "bool", default: true, group: "section.lock.clock", label: "24-hour clock" },
+                showSeconds:    { type: "bool", default: false, group: "section.lock.clock", label: "Show seconds" },
+                showDate:       { type: "bool", default: true, group: "section.lock.clock", label: "Show date" },
+                greeting:       { type: "bool", default: true, group: "section.lock.clock", label: "Show greeting" },
+
+                showUser:       { type: "bool", default: true, group: "section.lock.widgets", label: "Show user name" },
+                weatherWidget:  { type: "bool", default: false, group: "section.lock.widgets", label: "Weather widget" },
+                mediaWidget:    { type: "bool", default: false, group: "section.lock.widgets", label: "Now playing widget" },
+
+                fillMode:       { type: "enum", options: ["fill","fit","stretch"], default: "fill", group: "section.lock.background", label: "Wallpaper fill mode" },
+                blurStrength:   { type: "num", min: 0, max: 1, step: 0.05, default: 0.4, group: "section.lock.background", label: "Blur strength" },
+                blurRadius:     { type: "num", min: 8, max: 128, step: 8, default: 40, group: "section.lock.background", label: "Blur radius", suffix: " px" },
+                scrimOpacity:   { type: "num", min: 0, max: 1, step: 0.05, default: 0.5, group: "section.lock.background", label: "Dim overlay" },
+                kenBurns:       { type: "bool", default: true, group: "section.lock.background", label: "Ken Burns zoom" },
+                parallax:       { type: "bool", default: true, group: "section.lock.background", label: "Mouse parallax" },
+                floatingShapes: { type: "bool", default: true, group: "section.lock.background", label: "Floating accent shapes" },
+                successFlash:   { type: "bool", default: true, group: "section.lock.background", label: "Success flash" },
+
+                passwordStyle:  { type: "enum", options: ["shapes","dots","text"], default: "shapes", group: "section.lock.security", label: "Password style" },
+                faceUnlock:     { type: "bool", default: false, group: "section.lock.security", label: "Face ID unlock", desc: "Unlock with the camera after enrolling in a terminal: edots faceid enroll. The password always works." },
+
+                powerButtons:   { type: "bool", default: true, group: "section.lock.power", label: "Power buttons" },
+
+                widgets:        { type: "map", default: {}, hidden: true },
+                widgetsNothing: { type: "map", default: {}, hidden: true },
+
+                devMode:        { type: "bool", default: false, group: "section.lock.advanced", label: "Developer mode", desc: "Allow a short whitelist of SAFE hotkeys while locked (screenshot, media, volume, brightness). They never unlock the session. Leave off on shared machines." },
+                devScreenshot:  { type: "bool", default: true, group: "section.lock.advanced", label: "Print Screen → screenshot", desc: "Print saves a screenshot; Ctrl+Print also copies it." },
+                devImportMango: { type: "bool", default: true, group: "section.lock.advanced", label: "Use my Mango binds", desc: "Reads ~/.config/mango/config.conf and also accepts the combos bound there to screenshot, media, volume and brightness commands." },
+                devKeyScreenshot:     { type: "str", default: "Super+U", group: "section.lock.advanced", label: "Screenshot hotkey", desc: "Extra combo for a screenshot while locked, e.g. Super+U. Leave empty to disable." },
+                devKeyScreenshotCopy: { type: "str", default: "Super+Shift+U", group: "section.lock.advanced", label: "Screenshot + clipboard hotkey" },
+                devMedia:       { type: "bool", default: true, group: "section.lock.advanced", label: "Media keys" },
+                devVolume:      { type: "bool", default: true, group: "section.lock.advanced", label: "Volume keys" },
+                devBrightness:  { type: "bool", default: true, group: "section.lock.advanced", label: "Brightness keys" },
+                devShowKeys:    { type: "bool", default: false, group: "section.lock.advanced", label: "Show pressed hotkeys", desc: "Shows names of function/modified keys (never typed characters) — handy for finding key names." }
             }
         },
         session: {
@@ -288,14 +364,16 @@ Singleton {
         { name: "page.widgets",    icon: "widgets",         group: "group.desktop",  cats: ["widgets"] },
         { name: "page.layout",     icon: "view_quilt",      group: "group.desktop",  cats: ["layout"] },
         { name: "page.clock",      icon: "schedule",        group: "group.desktop",  cats: ["clock"] },
-        { name: "page.lockscreen", icon: "lock",            group: "group.desktop",  cats: ["lockscreen"] },
+        { name: "page.nightlight", icon: "bedtime",         group: "group.desktop",  cats: ["nightlight"] },
         { name: "page.general",    icon: "tune",            group: "group.system",   cats: ["general"] },
         { name: "page.session",    icon: "bedtime",         group: "group.system",   cats: ["session"] },
+        { name: "page.lockscreen", icon: "lock",            group: "group.system",   cats: ["lockscreen"] },
         { name: "page.osd",        icon: "volume_up",       group: "group.system",   cats: ["osd"] },
         { name: "page.notif",      icon: "notifications",   group: "group.system",   cats: ["notif"] },
         { name: "page.monitor",    icon: "monitor_heart",   group: "group.system",   cats: ["monitor"] },
+        { name: "page.updates",    icon: "system_update",   group: "group.system",   cats: ["updates"] },
         { name: "page.gamemode",   icon: "sports_esports",  group: "group.system",   cats: ["gamemode"] },
-        { name: "page.record",     icon: "videocam",        group: "group.system",   cats: ["record"] },
+        { name: "page.record",     icon: "videocam",        group: "group.system",   cats: ["capture", "record"] },
         { name: "page.plugins",    icon: "extension",       group: "group.extras",   cats: [] },
         { name: "page.about",      icon: "info",            group: "group.extras",   cats: [] }
     ]

@@ -1,7 +1,9 @@
 {
   "design": "nothing",
-  "uiScale": 0.9500000000000001,
-  "animationSpeed": 0.8500000000000001,
+  "uiScale": 0.9,
+  "animationSpeed": 1,
   "gtkReload": "notify",
-  "mode": "system"
+  "mode": "system",
+  "cornerStyle": "expressive",
+  "shadows": true
 }

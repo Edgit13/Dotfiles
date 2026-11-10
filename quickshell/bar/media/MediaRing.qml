@@ -16,6 +16,11 @@ Item {
     implicitWidth: Theme.components.dp(26)
     implicitHeight: Theme.components.dp(26)
 
+    // прогрес і колір кільця плавно доганяють нове значення (медіа, CPU/RAM, батарея)
+    Behavior on value { MotionAnimation { role: "stateChange" } }
+    Behavior on ringColor { MotionColorAnimation { role: "stateChange" } }
+    Behavior on iconColor { MotionColorAnimation { role: "stateChange" } }
+
     onValueChanged: canvas.requestPaint()
     onRingColorChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
@@ -56,9 +61,27 @@ Item {
     }
 
     Text {
+        id: iconText
         anchors.centerIn: parent
         text: root.icon
         font { family: Theme.type.icons; pixelSize: Math.round(root.width * (root.nothing ? 0.4 : 0.62)) }
         color: root.iconColor
+
+        property bool _ready: false
+        Component.onCompleted: _ready = true
+        onTextChanged: if (_ready && ThemeMotion.enabled) iconSwap.restart()
+
+        SequentialAnimation {
+            id: iconSwap
+            NumberAnimation {
+                target: iconText
+                property: "opacity"
+                from: 0.25
+                to: 1
+                duration: ThemeMotion.duration("stateChange")
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: ThemeMotion.curveFor("stateChange")
+            }
+        }
     }
 }

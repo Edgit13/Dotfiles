@@ -29,6 +29,10 @@ THEME_HELPER="$HOME/.config/mango/scripts/wallcolors.py"
 [ -f "$THEME_HELPER" ] || THEME_HELPER="$REPO_DIR/mango/scripts/wallcolors.py"
 SESSION_HELPER="$HOME/.config/quickshell/bar/scripts/sessionidle.py"
 [ -f "$SESSION_HELPER" ] || SESSION_HELPER="$REPO_DIR/quickshell/bar/scripts/sessionidle.py"
+FACEID_HELPER="$HOME/.config/quickshell/bar/scripts/faceid.sh"
+[ -f "$FACEID_HELPER" ] || FACEID_HELPER="$REPO_DIR/quickshell/bar/scripts/faceid.sh"
+NIGHTLIGHT_HELPER="$HOME/.config/quickshell/bar/scripts/nightlight.py"
+[ -f "$NIGHTLIGHT_HELPER" ] || NIGHTLIGHT_HELPER="$REPO_DIR/quickshell/bar/scripts/nightlight.py"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     C_OK=$'\033[0;32m'; C_WARN=$'\033[0;33m'; C_ERR=$'\033[0;31m'
@@ -125,12 +129,15 @@ PY
 
 # ───────────────────────────── doctor ─────────────────────────────
 cmd_doctor() {
+    local json=0
+    [ "${1:-}" = "--json" ] && json=1
     local ok=0 warn=0 fail=0
+    local rows=() group=""
 
-    dok()   { printf '  %s✓%s %s\n' "$C_OK" "$C_OFF" "$*"; ok=$((ok + 1)); }
-    dwarn() { printf '  %s!%s %s\n' "$C_WARN" "$C_OFF" "$*"; warn=$((warn + 1)); }
-    dfail() { printf '  %s✗%s %s\n' "$C_ERR" "$C_OFF" "$*"; fail=$((fail + 1)); }
-    dhead() { printf '\n%s%s%s\n' "$C_BOLD" "$*" "$C_OFF"; }
+    dok()   { rows+=("$group"$'\t'"ok"$'\t'"$*"); ok=$((ok + 1)); [ "$json" -eq 1 ] || printf '  %s✓%s %s\n' "$C_OK" "$C_OFF" "$*"; }
+    dwarn() { rows+=("$group"$'\t'"warn"$'\t'"$*"); warn=$((warn + 1)); [ "$json" -eq 1 ] || printf '  %s!%s %s\n' "$C_WARN" "$C_OFF" "$*"; }
+    dfail() { rows+=("$group"$'\t'"fail"$'\t'"$*"); fail=$((fail + 1)); [ "$json" -eq 1 ] || printf '  %s✗%s %s\n' "$C_ERR" "$C_OFF" "$*"; }
+    dhead() { group="$*"; [ "$json" -eq 1 ] || printf '\n%s%s%s\n' "$C_BOLD" "$*" "$C_OFF"; }
 
     local required=(qs mango mmsg matugen awww cliphist brightnessctl nmcli
                     playerctl grim tesseract python3 gcc wpctl wl-copy fc-list wlr-randr)
@@ -256,8 +263,8 @@ cmd_doctor() {
     else
         dwarn "wallpaper colour index missing — Settings → Wallpapers → Analyze wallpapers"
     fi
-    if [ -f "$REPO_DIR/quickshell/lockscreen/pam-auth.c" ]; then
-        if [ -x "$REPO_DIR/quickshell/lockscreen/pam-auth" ]; then
+    if [ -f "$LOCK_DIR/pam-auth.c" ]; then
+        if [ -x "$LOCK_DIR/pam-auth" ]; then
             dok "lock screen helper compiled"
         else
             dwarn "lock screen helper not compiled — install.sh builds it (needs gcc + PAM headers)"
@@ -277,6 +284,35 @@ cmd_doctor() {
         fi
     else
         dwarn "Firefox not installed (optional)"
+    fi
+
+    if [ "$json" -eq 1 ]; then
+        printf '%s\n' "${rows[@]}" | python3 -c '
+import json, sys
+groups, index = [], {}
+ok = warn = fail = 0
+for line in sys.stdin:
+    line = line.rstrip("\n")
+    if not line:
+        continue
+    parts = line.split("\t", 2)
+    if len(parts) != 3:
+        continue
+    g, s, t = parts
+    if g not in index:
+        index[g] = {"name": g, "items": []}
+        groups.append(index[g])
+    index[g]["items"].append({"status": s, "text": t})
+    if s == "ok":
+        ok += 1
+    elif s == "warn":
+        warn += 1
+    else:
+        fail += 1
+print(json.dumps({"groups": groups, "summary": {"ok": ok, "warn": warn, "fail": fail}}, ensure_ascii=False))
+'
+        [ "$fail" -eq 0 ]
+        return
     fi
 
     printf '\n%sSummary:%s %s%d ok%s, %s%d warning(s)%s, %s%d error(s)%s\n' \
@@ -303,8 +339,14 @@ ${C_BOLD}Surfaces${C_OFF}
   edots settings              settings app         (Super+A)
   edots dashboard             dashboard            (Super+D)
   edots tasks                 task manager         (Super+T)
-  edots notifications [clear|dnd]
-  edots screenshot [stop]     QuickSnip capture    (Super+U)
+  edots notifications [open|toggle|close|clear|read|clear-read|dnd]
+  edots notifications [mute|unmute] <app>   mute/unmute one app
+  edots screenshot [stop]     screen capture       (Super+U)
+  edots ocr                   select a region, copy its text
+  edots lens                  select a region, search with Google Lens
+  edots nightlight [on|off|toggle|temp N|status]   warm screen (gammastep)
+  edots updates [open|refresh|update]   update centre (repo + AUR + Flatpak)
+  edots diagnostics           health report in a surface (edots doctor --json)
   edots close                 close every open surface (Super+Esc)
 
 ${C_BOLD}Per-app audio${C_OFF}
@@ -333,10 +375,15 @@ ${C_BOLD}System${C_OFF}
   edots session               idle timers, swayidle and session actions
   edots session apply         regenerate swayidle.conf from Settings
   edots session lock|suspend|logout|reboot|poweroff
+  edots faceid                Face ID status (lock screen unlock)
+  edots faceid setup          install OpenCV locally and download the models
+  edots faceid enroll         record your face (look at the camera for 4 s)
+  edots faceid test           verify once and print the similarity
+  edots faceid remove         forget the enrolled face
   edots lock                  lock the screen              (Super+L)
   edots suspend               lock, then suspend           (Super+F3)
   edots reload                restart the bar shell        (Super+Shift+R)
-  edots doctor                check packages, fonts, links, services
+  edots doctor [--json]      check packages, fonts, links, services
   edots ipc <target> <fn>     raw Quickshell IPC passthrough
 
   edots help | version
@@ -382,8 +429,20 @@ case "$cmd" in
         action="${1:-toggle}"
         ipc_open screentool "$action"
         ;;
+    ocr)
+        ipc_open screentool ocr
+        ;;
+    lens|google-lens)
+        ipc_open screentool lens
+        ;;
     notifications|notif)
         action="${1:-toggle}"
+        case "$action" in
+            clear-read|clearread|clearRead) action="clearRead" ;;
+            mark-read|read-all|read|readAll) action="read" ;;
+            mute)   shift || true; ipc_open notifications muteApp "${1:-}"; exit 0 ;;
+            unmute) shift || true; ipc_open notifications unmuteApp "${1:-}"; exit 0 ;;
+        esac
         ipc_open notifications "$action"
         ;;
 
@@ -514,6 +573,43 @@ case "$cmd" in
             *)  die "unknown session action: $action (try: status, apply, lock, suspend, logout, reboot, poweroff)" ;;
         esac
         ;;
+    faceid|face)
+        [ -f "$FACEID_HELPER" ] || die "faceid.sh not found: $FACEID_HELPER"
+        exec bash "$FACEID_HELPER" "$@"
+        ;;
+    nightlight|night)
+        action="${1:-status}"
+        case "$action" in
+            status) exec python3 "$NIGHTLIGHT_HELPER" status ;;
+            on|off|toggle) ipc_open nightlight "$action" ;;
+            temp)
+                [ "$#" -ge 2 ] || die "usage: edots nightlight temp <2000-6500>"
+                ipc_open nightlight setTemp "$2"
+                ;;
+            apply) ipc_open nightlight apply ;;
+            *) die "unknown nightlight action: $action (try: on, off, toggle, temp N, status)" ;;
+        esac
+        ;;
+    updates)
+        action="${1:-open}"
+        case "$action" in
+            open|ui|toggle) ipc_open pill toggleUpdates ;;
+            refresh|check)  ipc_open updates refresh ;;
+            update|all|apply) ipc_open updates updateAll ;;
+            *) die "unknown updates action: $action (try: open, refresh, update)" ;;
+        esac
+        ;;
+    update)
+        ipc_open updates updateAll
+        ;;
+    diagnostics|health)
+        action="${1:-open}"
+        case "$action" in
+            open|ui|toggle) ipc_open pill toggleDiagnostics ;;
+            refresh|check)  ipc_open diagnostics refresh ;;
+            *) die "unknown diagnostics action: $action (try: open, refresh)" ;;
+        esac
+        ;;
     lock)
         if [ -f "$SESSION_HELPER" ]; then exec python3 "$SESSION_HELPER" lock; fi
         [ -x "$LOCK_DIR/lock.sh" ] || die "lock script not found: $LOCK_DIR/lock.sh"
@@ -524,7 +620,7 @@ case "$cmd" in
         [ -x "$LOCK_DIR/suspend.sh" ] || die "suspend script not found: $LOCK_DIR/suspend.sh"
         exec bash "$LOCK_DIR/suspend.sh"
         ;;
-    doctor|check)          cmd_doctor ;;
+    doctor|check)          cmd_doctor "$@" ;;
     ipc)
         [ "$#" -ge 2 ] || die "usage: edots ipc <target> <function> [args...]"
         ipc_open "$@"

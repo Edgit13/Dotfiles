@@ -28,7 +28,7 @@ PanelWindow {
         return MangoService.focusedMonitor === monitorName
     }
 
-    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "audio", "display", "wifi", "bluetooth", "media", "power", "binds", "resources", "dashboard"]
+    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "audio", "display", "wifi", "bluetooth", "media", "power", "updates", "diagnostics", "binds", "resources", "dashboard"]
     readonly property string activeSurface: ShellState.activeSurface
     readonly property bool isPluginSurface: activeSurface.indexOf("plugin:") === 0
     readonly property string pluginId: isPluginSurface ? activeSurface.substring(7) : ""
@@ -41,7 +41,10 @@ PanelWindow {
     // дашборд тут лише коли він НЕ морфиться з бару
     readonly property bool isAllowedSurface: isKnownSurface(activeSurface)
         && (activeSurface !== "dashboard" || BarConfig.openMode !== "morph")
-    readonly property bool isOpen: !BarConfig.pillMorph && isAllowedSurface
+    // повний бар / острівці теж можуть морфити панелі (openMode: morph + підтримувана панель)
+    readonly property bool handledByMorph: BarConfig.pillMorph
+        || ((BarConfig.fullMorph || BarConfig.islandsMorph) && BarConfig.canMorph(activeSurface))
+    readonly property bool isOpen: !handledByMorph && isAllowedSurface
         && (isCurrentMonitor || Quickshell.screens.length === 1)
 
     // режим подачі: window | spotlight | drawer (morph у повній смузі = window)
@@ -53,9 +56,9 @@ PanelWindow {
     // Поверхню створює лише той монітор, на якому її відкрито: інакше кожен
     // SurfaceOverlay тримає власний екземпляр і прихований перехоплює one-shot
     // стан (mixerTab). У morph-режимі поверхні живуть у піллі (BarWindow).
-    onActiveSurfaceChanged: if (!BarConfig.pillMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
+    onActiveSurfaceChanged: if (!handledByMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
     onVisibleChanged: if (!visible) shownSurface = "idle"
-    Component.onCompleted: if (!BarConfig.pillMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
+    Component.onCompleted: if (!handledByMorph && isCurrentMonitor && isKnownSurface(activeSurface)) shownSurface = activeSurface
 
     readonly property var meta: ({
         launcher:  { icon: "\ue5c3", title: "ui.surface.launcher",  w: 560, h: 520, end: false, typing: true },
@@ -67,7 +70,9 @@ PanelWindow {
         wifi:      { icon: "\ue63e", title: "ui.surface.wifi",      w: 460, h: 440, end: true,  typing: false },
         bluetooth: { icon: "\ue1a7", title: "ui.surface.bluetooth", w: 460, h: 480, end: true,  typing: false },
         media:     { icon: "\ue405", title: "ui.surface.media",     w: 460, h: 320, end: true,  typing: false },
-        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 344, end: true,  typing: false },
+        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 480, h: 700, end: true,  typing: false },
+        updates:   { icon: "\ue5d5", title: "ui.surface.updates",   w: 620, h: 560, end: true,  typing: false },
+        diagnostics: { icon: "\ue5d5", title: "ui.surface.diagnostics", w: 640, h: 620, end: true, typing: false },
         binds:     { icon: "\ue312", title: "ui.surface.binds",     w: 700, h: 620, end: false, typing: true },
         resources: { icon: "\ue322", title: "ui.surface.resources", w: 560, h: 620, end: false, typing: false },
         dashboard: { icon: "\ue871", title: "ui.surface.dashboard", w: 920, h: 760, end: false, typing: false }
@@ -101,8 +106,8 @@ PanelWindow {
 
     // ---- розташування відносно бару ----
     readonly property string _cfgBar: BarConfig.positionFor(monitorName)
-    // пілл завжди горизонтальний (див. BarWindow) → для left/right вважаємо top
-    readonly property string bar: (BarConfig.style === "pill" && (_cfgBar === "left" || _cfgBar === "right")) ? "top" : _cfgBar
+    // pill / islands завжди горизонтальні (див. BarWindow) → для left/right вважаємо top
+    readonly property string bar: (BarConfig.style !== "full" && (_cfgBar === "left" || _cfgBar === "right")) ? "top" : _cfgBar
     readonly property bool drawerLeft: bar === "right"          // шторка з протилежного від бару боку
     readonly property bool vertical: bar === "left" || bar === "right"
     readonly property real pad: Theme.components.dp(16)                       // запас під тінь і зсув
@@ -308,6 +313,22 @@ PanelWindow {
                         active: win.shownSurface === "power"
                         visible: active
                         sourceComponent: PowerSurface {}
+                        onLoaded: {
+                            if (item && item.requestClose)
+                                item.requestClose.connect(function () { ShellState.closeSurfaces() })
+                        }
+                    }
+                    Loader {
+                        anchors.fill: parent
+                        active: win.shownSurface === "updates"
+                        visible: active
+                        sourceComponent: UpdateSurface {}
+                    }
+                    Loader {
+                        anchors.fill: parent
+                        active: win.shownSurface === "diagnostics"
+                        visible: active
+                        sourceComponent: DiagnosticsSurface {}
                     }
                     Loader {
                         anchors.fill: parent

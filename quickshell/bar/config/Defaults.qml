@@ -69,7 +69,7 @@ Singleton {
         modules: {
             order: ["workspaces", "clock", "wallpaper", "media", "wifi",
                     "link", "power", "mixer", "clipboard", "notifications",
-                    "launcher", "settings"],
+                    "launcher", "settings", "nightlight", "tray"],
             workspaces: true,
             clock: true,
             wallpaper: true,
@@ -81,7 +81,9 @@ Singleton {
             clipboard: true,
             notifications: true,
             launcher: true,
-            settings: true
+            settings: true,
+            nightlight: true,
+            tray: true
         },
         launcher: {
             fieldHeight: 34,

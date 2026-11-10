@@ -21,7 +21,7 @@ Item {
     property bool listenShell: true          // false — коли поверхнею керує хост (pill)
     property string revealDirection: "top"   // top|bottom|left|right
 
-    readonly property real desiredHeight: 760
+    readonly property real desiredHeight: 840
     readonly property real effectiveHeight: Math.min(desiredHeight, maxHeight)
 
     implicitWidth: 920
@@ -48,7 +48,7 @@ Item {
 
     property int currentTab: 0
 
-    readonly property int contentHeight: Math.max(300, Math.round(effectiveHeight) - 152)
+    readonly property int contentHeight: Math.max(300, Math.round(effectiveHeight) - 120)
 
     readonly property var tabs: [
         { glyph: "\ue871", label: Lang.t("ui.tab.overview") },
@@ -105,32 +105,85 @@ Item {
             anchors.margins: Theme.space.lg
             spacing: Theme.space.md
 
-            // ── Header ───────────────────────────────────────
+            // ── Tab bar (M3 navigation bar: pill під іконкою, підпис нижче) ──
             RowLayout {
                 Layout.fillWidth: true
-                spacing: Theme.space.sm
+                spacing: Theme.space.xs
 
-                Text {
-                    text: root.tabs[root.currentTab].glyph
-                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                    color: Theme.color.primary
+                Repeater {
+                    model: root.tabs
+                    Item {
+                        id: tabItem
+                        required property var modelData
+                        required property int index
+                        readonly property bool current: index === root.currentTab
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: Theme.components.dp(60)
+
+                        Column {
+                            anchors.centerIn: parent
+                            spacing: Theme.space.xs
+
+                            Rectangle {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                width: tabItem.current ? Theme.components.dp(64) : Theme.components.dp(40)
+                                height: Theme.components.dp(32)
+                                radius: height / 2
+                                color: tabItem.current
+                                    ? Theme.color.secondaryContainer
+                                    : tabMa.pressed
+                                        ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                                        : tabMa.containsMouse
+                                            ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                                            : "transparent"
+                                Behavior on width { MotionAnimation { role: "morph" } }
+                                Behavior on color { MotionColorAnimation { role: "hover" } }
+
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: tabItem.modelData.glyph
+                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                                    color: tabItem.current ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                                }
+                            }
+                            ThemedText {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                text: tabItem.modelData.label
+                                style: Theme.type.labelMedium
+                                emphasized: tabItem.current
+                                color: tabItem.current ? Theme.color.fgSurface : Theme.color.fgSurfaceVariant
+                            }
+                            Rectangle {
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                visible: Theme.settings.nothing
+                                width: 4; height: 4; radius: 2
+                                color: ThemeNothing.red
+                                opacity: tabItem.current ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 200 } }
+                            }
+                        }
+                        MouseArea {
+                            id: tabMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.currentTab = tabItem.index
+                        }
+                    }
                 }
-                ThemedText {
-                    text: root.tabs[root.currentTab].label
-                    style: Theme.type.titleMedium
-                    Layout.fillWidth: true
-                }
+
                 Rectangle {
-                    implicitWidth: 32
-                    implicitHeight: 32
-                    radius: 16
+                    Layout.alignment: Qt.AlignTop
+                    implicitWidth: Theme.components.dp(32)
+                    implicitHeight: Theme.components.dp(32)
+                    radius: height / 2
                     color: closeMa.pressed
                         ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
                         : closeMa.containsMouse
                             ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
                             : "transparent"
                     Behavior on color { MotionColorAnimation { role: "hover" } }
-
                     Text {
                         anchors.centerIn: parent
                         text: "\ue5cd"
@@ -143,60 +196,6 @@ Item {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: ShellState.closeDashboard()
-                    }
-                }
-            }
-
-            // ── Tabs ─────────────────────────────────────────
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.space.xs
-
-                Repeater {
-                    model: root.tabs
-                    Rectangle {
-                        id: tabRect
-                        required property var modelData
-                        required property int index
-
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 40
-                        radius: 20
-                        color: tabRect.index === root.currentTab
-                            ? Theme.color.secondaryContainer
-                            : tabMa.pressed
-                                ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
-                                : tabMa.containsMouse
-                                    ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
-                                    : "transparent"
-                        Behavior on color { MotionColorAnimation { role: "hover" } }
-
-                        RowLayout {
-                            anchors.centerIn: parent
-                            spacing: Theme.space.xs
-
-                            Text {
-                                text: tabRect.modelData.glyph
-                                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
-                                color: tabRect.index === root.currentTab
-                                    ? Theme.color.fgSecondaryContainer
-                                    : Theme.color.fgSurfaceVariant
-                            }
-                            ThemedText {
-                                text: tabRect.modelData.label
-                                style: Theme.type.labelLarge
-                                color: tabRect.index === root.currentTab
-                                    ? Theme.color.fgSecondaryContainer
-                                    : Theme.color.fgSurfaceVariant
-                            }
-                        }
-                        MouseArea {
-                            id: tabMa
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.currentTab = tabRect.index
-                        }
                     }
                 }
             }
@@ -251,71 +250,99 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             contentWidth: width
-            contentHeight: grid.implicitHeight
+            contentHeight: col.implicitHeight
 
-            GridLayout {
-                id: grid
+            ColumnLayout {
+                id: col
                 width: flick.width
-                columns: 2
-                columnSpacing: Theme.space.md
-                rowSpacing: Theme.space.md
+                spacing: Theme.space.md
 
-                // Row 1 — identity + environment
-                Reveal {
-                    index: 0
-                    shown: root.occupies
+                // Row A — годинник · погода · профіль
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 172
-                    SystemCard { anchors.fill: parent }
-                }
-                Reveal {
-                    index: 1
-                    shown: root.occupies
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 172
-                    WeatherCard { anchors.fill: parent }
-                }
+                    Layout.preferredHeight: Theme.components.dp(148)
+                    spacing: Theme.space.md
+                    readonly property real usable: width - spacing * 2
 
-                // Row 2 — brightness control (full width)
-                Reveal {
-                    index: 2
-                    shown: root.occupies
-                    Layout.fillWidth: true
-                    Layout.columnSpan: 2
-                    Layout.preferredHeight: 136
-                    BrightnessCard { anchors.fill: parent }
-                }
-
-                // Row 3 — time tools
-                Reveal {
-                    index: 3
-                    shown: root.occupies
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 180
-                    CalendarCard { anchors.fill: parent }
-                }
-                Reveal {
-                    index: 4
-                    shown: root.occupies
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 180
-                    TimerCard { anchors.fill: parent }
+                    Reveal {
+                        index: 0; shown: root.occupies
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        Layout.preferredWidth: parent.usable * 0.32
+                        ClockTile { anchors.fill: parent }
+                    }
+                    Reveal {
+                        index: 1; shown: root.occupies
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        Layout.preferredWidth: parent.usable * 0.20
+                        WeatherCard { anchors.fill: parent }
+                    }
+                    Reveal {
+                        index: 2; shown: root.occupies
+                        Layout.fillWidth: true; Layout.fillHeight: true
+                        Layout.preferredWidth: parent.usable * 0.48
+                        SystemCard { anchors.fill: parent }
+                    }
                 }
 
-                // Row 4 — media strip (full width)
-                Reveal {
-                    index: 5
-                    shown: root.occupies
+                // Row B — календар + плеєр | сповіщення + таймер
+                RowLayout {
                     Layout.fillWidth: true
-                    Layout.columnSpan: 2
-                    Layout.preferredHeight: 240
-                    MiniMediaCard { anchors.fill: parent }
+                    spacing: Theme.space.md
+                    readonly property real usable: width - spacing
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignTop
+                        Layout.preferredWidth: parent.usable * 0.5
+                        spacing: Theme.space.md
+
+                        Reveal {
+                            index: 3; shown: root.occupies
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.components.dp(316)
+                            CalendarCard { anchors.fill: parent }
+                        }
+                        Reveal {
+                            index: 4; shown: root.occupies
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.components.dp(100)
+                            MiniMediaCard { anchors.fill: parent }
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: parent.usable * 0.5
+                        spacing: Theme.space.md
+
+                        Reveal {
+                            index: 5; shown: root.occupies
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            NotifCard { anchors.fill: parent }
+                        }
+                        Reveal {
+                            index: 6; shown: root.occupies
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: Theme.components.dp(120)
+                            TimerCard { anchors.fill: parent }
+                        }
+                    }
+                }
+
+                // Row C — яскравість (усі дисплеї)
+                Reveal {
+                    index: 7; shown: root.occupies
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: Math.max(Theme.components.dp(136), brightnessCard.implicitHeight)
+                    BrightnessCard { id: brightnessCard; anchors.fill: parent }
                 }
             }
         }
     }
 
-    Component { id: pageMedia;       MediaTab       { } }
+    Component { id: pageMedia;       MediaTab       { active: root.occupies } }
     Component { id: pagePerformance; PerformanceTab { } }
     Component { id: pageWorkspaces;  WorkspacesTab  { } }
     Component { id: pagePlanner;     PlannerTab     { } }

@@ -1,33 +1,24 @@
 # Capture — progress
 
-## Phase 1 — Base integration (QuickSnip → Edots): ✅ DONE
-- QuickSnip скопійовано в `quickshell/QuickSnip/`; бінди/install.sh/nix оновлені.
-- Виправлення в процесі: Theme.qml (QtObject property), magick `\\(` escape, dimming.frag.qsb (curl з upstream).
+## Статус: завершено (перенесено в bar shell)
 
-## Phase 2 — Edots adaptive colors: ✅ DONE
-- `Theme.qml` — читає `~/.config/quickshell/colors.json` (той самий файл, що пише wallcolors.py/matugen), watchChanges + fallback.
-- Прив'язано: shell.qml (бейджі), RegionSelector (accent/tint/label/guides), WordOverlay (accent/surface/text/hover/pressed/lens/status), LensMode HTML (bg0/fg).
-- Перевірено запуском: конфіг завантажується, OCR цикл працює (exit 0).
+QuickSnip більше не існує як окремий shell. Усе захоплення живе в
+`quickshell/bar/screentool/`:
 
-## Phase 3 — Screenshot: ✅ DONE (поточний стан)
-- State machine в shell.qml: `menu` → (`action` | `monitor`) → `capture`.
-- Запуск більше НЕ робить grim/region selection: спочатку головне Capture UI (Edots кольори).
-- Region → Screenshot: кнопка тільки в меню → grim+scale (існуючий код) → RegionSelector →
-  magick crop → `wl-copy --type image/png` → notify → повернення в меню (`resetToMenu()`), без Qt.quit.
-- Monitor → Screenshot: список `Quickshell.screens` (name + resolution) → `grim -o <name>` →
-  wl-copy image/png → notify → повернення в меню.
-- Lifecycle: старий баг (автозакриття через ~1с) не відтворюється — селектор gated на appState === "capture".
-  Після завершення дії — повернення в меню; вихід тільки через Esc (з menu/capture).
-- Збереження: лише clipboard (існуюча поведінка QuickSnip), без filename/save-location UI.
+- `ScreenTool.qml` — оверлей виділення, скріншот (region / monitor), запис, OCR/Lens.
+- `Ocr.qml` — порт `OcrMode.qml` (tesseract + magick, upscale, polarity check, wl-copy).
+- `Lens.qml` — порт `LensMode.qml` (crop → base64 → локальна HTML-сторінка → браузер).
 
-### Файли Phase 3
-- Змінено: `quickshell/QuickSnip/shell.qml` (state machine, CaptureButton, меню, 2 Process-и, resetToMenu).
-- Не змінено: все інше (components/, modes/, shaders/, assets/, Theme.qml, settings.json, бінди).
+## Що вміє
 
-## NEXT PHASE (Record / Lens) — не починати без команди
-- Додати дії Region→Record (wf-recorder region), Monitor→Record, Region/Monitor→Lens.
-- Меню вже має структуру source→action; додати кнопки дій у відповідні Column.
+- Region → Screenshot (clipboard / файл), Monitor → Screenshot.
+- Region → OCR (`O`), Region → Lens (`L`), Region / Monitor → Record (`R`).
+- Налаштування: Settings → Capture & recording (`capture.json`).
+- IPC: `screentool open|close|toggle|ocr|lens|stop`.
+- CLI: `edots screenshot [stop]`, `edots ocr`, `edots lens`.
 
-## Exact next step (наступна фаза)
-1. Підтвердити Phase 3 у користувача (тест Region+Screenshot, Monitor+Screenshot на 2 моніторах).
-2. За командою — реалізувати Record (wf-recorder) як наступну дію.
+## Нотатки
+
+- Кольори беруться з `~/.config/quickshell/colors.json` через тему бару.
+- Запис екрана — `RecordService` + `wf-recorder`, індикатор у барі.
+- Старі файли QuickSnip видалено; історію можна знайти в git (коміт `c3b5445`).

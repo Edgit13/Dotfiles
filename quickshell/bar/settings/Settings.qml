@@ -30,6 +30,12 @@ Singleton {
                onFileChanged: reload(); onTextChanged: root._onFile("lockscreen.json", text()) }
     FileView { path: root.base + "session.json";    watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("session.json", text()) }
+    FileView { path: root.base + "capture.json";    watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("capture.json", text()) }
+    FileView { path: root.base + "nightlight.json"; watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("nightlight.json", text()) }
+    FileView { path: root.base + "updates.json";    watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("updates.json", text()) }
     FileView { path: root.base + "colors.json";     watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("colors.json", text()) }
 
@@ -41,6 +47,9 @@ Singleton {
     FileView { id: wWidgets; path: root.base + "widgets.json";   atomicWrites: true; printErrors: false }
     FileView { id: wLock;   path: root.base + "lockscreen.json"; atomicWrites: true; printErrors: false }
     FileView { id: wSession; path: root.base + "session.json";   atomicWrites: true; printErrors: false }
+    FileView { id: wCapture; path: root.base + "capture.json";   atomicWrites: true; printErrors: false }
+    FileView { id: wNight;   path: root.base + "nightlight.json"; atomicWrites: true; printErrors: false }
+    FileView { id: wUpdates; path: root.base + "updates.json";    atomicWrites: true; printErrors: false }
     FileView { id: wColors; path: root.base + "colors.json";     atomicWrites: true; printErrors: false }
 
     function _writer(file) {
@@ -53,6 +62,9 @@ Singleton {
         case "widgets.json":    return wWidgets
         case "lockscreen.json": return wLock
         case "session.json":    return wSession
+        case "capture.json":    return wCapture
+        case "nightlight.json": return wNight
+        case "updates.json":    return wUpdates
         case "colors.json":     return wColors
         }
         return null
@@ -168,13 +180,19 @@ Singleton {
             var cat = p.cats[ci]
             var cs = Schema.schema[cat]
             if (!cs || !cs.fields) continue
-            var fields = []
+            // Сусідні поля з однаковим group утворюють окрему секцію.
+            // Поля без group збираються в одну секцію з назвою категорії.
+            var cur = null
             for (var key in cs.fields) {
                 var f = cs.fields[key]
                 if (f.hidden) continue
-                fields.push({ cat: cat, key: key, field: f })
+                var g = f.group || ""
+                if (!cur || g !== cur.group) {
+                    cur = { cat: cat, label: g || cs.label || cat, group: g, fields: [] }
+                    out.push(cur)
+                }
+                cur.fields.push({ cat: cat, key: key, field: f })
             }
-            if (fields.length > 0) out.push({ cat: cat, label: cs.label || cat, fields: fields })
         }
         return out
     }

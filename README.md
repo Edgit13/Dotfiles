@@ -29,6 +29,11 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 <img src="screenshots/Bar-Nothing.png" alt="Edots bar — Nothing" width="100%">
 <sub><b>Nothing</b> — monochrome, dot-matrix rings, one red accent</sub>
 
+<br><br>
+
+<img src="screenshots/Bar-Islands.png" alt="Edots bar — Islands" width="100%">
+<sub><b>Islands</b> — three floating capsules: control · workspaces + clock · tray</sub>
+
 </div>
 
 <br>
@@ -47,12 +52,12 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 | | |
 |---|---|
 | 🎨 **Two designs** | Material 3 Expressive and Nothing, light and dark. Switch live in *Settings → Appearance* or with `ipc call theme toggleDesign`. Animated transitions: `fade`, `dots`, `scan` or off. |
-| 🧩 **Modular bar** | Per-monitor bar on any edge (top / bottom / left / right). Launcher, active window, media player, resources, workspaces, clock, volume, network, battery, notifications, power. Modules can be toggled from Settings. |
-| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi, media, power menu, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
+| 🧩 **Modular bar** | Three designs — one full strip, a compact pill, or three floating **islands** — on any edge (top / bottom / left / right) and per monitor. Launcher, active window, media player, resources, workspaces, clock, volume, network, battery, notifications, power. Modules can be toggled from Settings. In **Morph** mode every style grows the panel out of the bar: the full strip from the clicked module, the pill from itself, and each island capsule independently. |
+| 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi, media, power menu, updates, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
 | 🔎 **Advanced launcher** | One field for everything: apps, files (`/report`), a calculator (`2+2`), emoji (`:fire`) and shell commands (`>htop`). <kbd>Enter</kbd> opens or copies, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs a command in the terminal. |
 | 📊 **Dashboard** | Overview, Media, Performance, Workspaces and Planner tabs. Weather (Open-Meteo, no API key), CPU / RAM / disk, brightness, volume, calendar with timed tasks. |
-| 🔔 **Own notification daemon** | Popups, a notification center and Do Not Disturb. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
-| 🔒 **Lock screen** | Quickshell + PAM lock screen: ken burns, parallax, floating shapes, power buttons. Lock-then-suspend through logind. |
+| 🔔 **Own notification daemon** | Popups and a notification center with unread state, pin, snooze, per-app mute, search, All / Unread / Pinned filters, copy text, clear-read, history limit, card density/icon size and Do Not Disturb. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
+| 🔒 **Lock screen** | Quickshell + PAM lock screen: ken burns, parallax, floating shapes, power buttons. Lock-then-suspend through logind. Optional **Face ID** unlocks from the webcam; the password always works. |
 | 🌙 **Idle & session** | Lock, display-off and suspend timers in *Settings → System → Session*; `swayidle` is regenerated live. `edots session` shows the effective timers and exposes lock / suspend / logout / reboot / poweroff. |
 | 🔊 **OSD** | Volume and brightness overlays on the active monitor. |
 | 🎮 **Game mode** | One switch turns off blur, animations and effects; the bar shows a pill while it is active. |
@@ -73,7 +78,9 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 | 🖼 **Wallpapers by color** | The picker sorts your wallpapers into Blue / Purple / Pink / Red / Orange / Yellow / Green / Cyan / Monochrome. Files are never touched; the index lives in `~/.cache/quickshell`. |
 | ⚙️ **Settings app** | A separate window with live controls, search across every option and a ↺ reset on each control. Persisted to `~/.config/quickshell/*.json`. |
 | 🧱 **Plugins** | Drop a folder with `plugin.json` into `~/.config/edots/plugins` to add a surface panel, a bar module, or both. Enable, inspect and reload them in *Settings → Plugins*; `edots plugin` lists them and `edots plugin open <id>` opens a panel. The bundled World Clock is a complete example. |
-| 🎥 **Screen tools** | Screenshot / OCR / recording overlay (QuickSnip) with a recording indicator in the bar. |
+| 🎥 **Screen tools** | Screenshot / region OCR / Google Lens / recording overlay, all in the bar shell (screentool) with a recording indicator. <kbd>Super</kbd>+<kbd>U</kbd>, `edots ocr`, `edots lens`. |
+| 🌙 **Night light** | Warm the screen with `gammastep` — manual temperature or an automatic sunrise/sunset schedule, from the bar, Settings or `edots nightlight`. |
+| ⬆️ **Update centre** | Non-locking check of repo, AUR and Flatpak updates (`checkupdates`, `yay/paru -Qum`, `flatpak remote-ls --updates`). "Update all" opens a terminal running `upkg update` — nothing installs silently. |
 | 🌍 **Languages** | English and Ukrainian UI. |
 | 🩺 **`edots` CLI** | One command for every surface — `edots launcher`, `edots settings`, `edots reload` — and `edots doctor` checks packages, fonts, links and services. |
 
@@ -143,6 +150,7 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 - **Fonts:** `SF Pro Display` (optional, proprietary), `SF Mono`, `JetBrainsMono Nerd Font`, `Material Symbols Rounded`, `Google Sans Flex`
 - **Tools:** `matugen`, `awww`, `cliphist`, `brightnessctl`, `nmcli`, `rfkill`, `playerctl`, `grim`, `tesseract`, `python3`, `python-pillow`, `jq`
 - **Lock screen:** `gcc` and PAM headers (`pam-auth` is built by `install.sh`)
+- **Face ID (optional):** a webcam. `edots faceid setup` installs OpenCV into a private venv and downloads two ONNX models (~38 MB); nothing is added to the system Python.
 
 <br>
 
@@ -219,7 +227,7 @@ Defined in `mango/binds.conf`; press <kbd>Super</kbd>+<kbd>/</kbd> for the live 
 | <kbd>Super</kbd>+<kbd>/</kbd> | Keybind cheat-sheet |
 | <kbd>Super</kbd>+<kbd>N</kbd> | Notification center |
 | <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> / <kbd>Ctrl</kbd>+<kbd>N</kbd> | Clear notifications / Do Not Disturb |
-| <kbd>Super</kbd>+<kbd>U</kbd> or <kbd>Print</kbd> | QuickSnip (screen capture / recording) |
+| <kbd>Super</kbd>+<kbd>U</kbd> or <kbd>Print</kbd> | Screen capture / OCR / Lens / recording (screentool) |
 | <kbd>Super</kbd>+<kbd>L</kbd> | Lock screen |
 | <kbd>Super</kbd>+<kbd>F3</kbd> | Suspend (lock, then suspend) |
 | <kbd>Super</kbd>+<kbd>Esc</kbd> | Close every open surface |
@@ -268,7 +276,8 @@ edots settings
 edots dashboard
 edots tasks
 edots screenshot         # stop, to end a recording
-edots notifications      # clear, dnd
+edots notifications      # open|toggle|close|clear|read|clear-read|dnd
+edots notifications mute ghostty   # mute / unmute one app
 edots app-audio          # apps, volumes, saved output routes; ui|sinks|route|forget|apply
 edots app-audio ui       # open Mixer → Apps
 edots plugin             # list plugins; open|enable|disable|toggle|reload|folder|path
@@ -278,6 +287,7 @@ edots osd volumeUp       # volumeDown, volumeMute, brightnessUp, brightnessDown
 edots theme toggleDesign # Material <-> Nothing
 edots theme setMode dark # or: light, toggleMode
 edots theme setTransition dots  # off | fade | dots | scan
+edots faceid             # Face ID status; setup|enroll|test|remove
 edots reload             # restart the bar
 edots doctor             # health check
 ```
@@ -348,6 +358,37 @@ there is no sandbox.
 
 <br>
 
+## 🙎 Face ID unlock
+
+Optional, local and off by default. Edots uses **YuNet** to find the face and
+**SFace** to compare it with embeddings saved on this machine — no cloud, no
+PAM module, no system Python changes.
+
+```sh
+edots faceid setup     # create the venv, install OpenCV, download the models
+edots faceid enroll    # look at the camera for ~4 seconds
+edots faceid test      # verify once and print the similarity
+edots faceid status    # enrolled / models / threshold
+edots faceid remove    # forget the saved face
+```
+
+Then enable **Settings → Lock screen → Face ID unlock** (or set
+`"faceUnlock": true` in `~/.config/quickshell/lockscreen.json`). When the lock
+screen opens it scans once; if you are not in frame it tries twice more. Tap the
+Face ID chip to scan again. A correct password always unlocks — Face ID only
+adds a way in.
+
+The camera is opened only while scanning. Embeddings live in
+`~/.config/quickshell/faceid/` with mode `0700`; the models and venv live in
+`~/.local/share/edots/`. Enrollment is CLI-only on purpose: recording a face
+from behind a locked screen would be insecure.
+
+> Face ID is a convenience feature, not a replacement for a strong password.
+> It checks that the frame moves, but it cannot stop a determined attacker with
+> a photo or video. Use `edots faceid remove` to turn it off completely.
+
+<br>
+
 ## 🎨 Color system
 
 One palette, many consumers. `wallcolors.py` (matugen plus custom HSL rules) writes:
@@ -407,11 +448,11 @@ quickshell/bar/               # the shell
 ├── services/                 # Mango, Wi-Fi, media, weather, performance, notifications, plugins, …
 ├── settings/                 # settings app (pages, controls, schema, i18n)
 ├── plugins/                  # bundled plugin examples + plugin.json reference
-├── scripts/                  # gamemode.sh, wallpaper_color_index.py, audioinfo.py, plugins.py, displayctl.py
+├── scripts/                  # gamemode.sh, wallpaper_color_index.py, audioinfo.py, plugins.py, displayctl.py, sessionidle.py, faceid.py, nightlight.py, updatecheck.py
 └── tools/                    # mango-probe.sh
 
 mango/                        # MangoWM config (binds, rules, animations, swayidle, scripts)
-edots/                        # CLI tools: edots, task-manager, tui-player, tool-manager (upkg, utimer)
+edots/                        # CLI tools: edots, task-manager, tool-manager (upkg, utimer)
 systemd/                      # user unit: swayidle
 fish/ ghostty/ kitty/ gtk-3.0/ gtk-4.0/ firefox/ rofi/ nvim/
 install.sh  sync.sh           # bootstrap and symlink manager

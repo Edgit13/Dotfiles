@@ -18,6 +18,7 @@ A minimal and functional **MangoWM** + **Quickshell** config.
 - **Task Manager** (`qs ipc call tasks toggle`) — folder-based tasks (backend `edots/task-manager/core.py`), **utimer** (background timer with swaync notification), **upkg** (packages via terminal)
 - **Blur** — real, via `blur_layer`/`blur_params_radius` in MangoWM config (hot-reload)
 - **Animations everywhere** — global switch + speed multiplier (`Anim.ms`)
+- **Three bar designs** — full strip, compact pill and three floating islands (Settings → Bar → Style)
 - Modular hover bar: module visibility and order from the UI
 - Panel position top/bottom
 - swaync, swaylock-effects, rofi, nm-applet

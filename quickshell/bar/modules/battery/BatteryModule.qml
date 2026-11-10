@@ -9,6 +9,7 @@ BarModule {
     id: root
 
     property var battery: UPower.displayDevice
+    animate: true
     readonly property bool isPresent: battery !== null && battery.isPresent && (battery.type === UPowerDeviceType.Battery || battery.percentage > 0)
     readonly property bool charging: battery?.state === UPowerDeviceState.Charging
     readonly property int level: Math.round((battery?.percentage ?? 0) * 100)

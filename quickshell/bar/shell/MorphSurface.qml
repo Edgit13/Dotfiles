@@ -24,6 +24,9 @@ Item {
     property real originY: 0.5                   // 0 = ріст вниз, 0.5 = від центру, 1 = вгору
     property Item dialogParent: null             // у стані dialog поверхня центрується в цьому Item
     property bool closeOnEscape: true
+    // false = compact-стан не перехоплює мишу (потрібно для «прозорих» морф-поверхонь,
+    // які живуть поверх капсул і розкриваються лише ззовні)
+    property bool interactive: true
 
     // розміри (0 = авто за вмістом слота + padding)
     property real compactWidth: 0
@@ -103,10 +106,31 @@ Item {
         if (_st === "dialog" || _st === "expanded") forceActiveFocus()
     }
     onHoveredChanged: {
-        _closing = !hovered
+        if (_st === "compact") _closing = !hovered
         _hov = _st === "compact" && hovered
     }
-    Component.onCompleted: { _rank = _rankOf(surfaceState); _st = surfaceState }
+    Component.onCompleted: { _rank = _rankOf(surfaceState); _st = surfaceState; _cs = _st; _chov = false }
+
+    // ---------- послідовне перемикання контенту ----------
+    // Слоти (compact / hover / expanded / dialog) більше не кросфейдяться незалежно: при зміні стану
+    // спершу гасне ВСЕ старе (_cs = "none"), і лише через contentOut нове починає проявлятись.
+    // Це прибирає «двійники» годинника та compact-рядок, що просвічував крізь розгорнуту панель.
+    property string _cs: "compact"
+    property bool _chov: false
+    Timer {
+        id: contentGate
+        interval: Math.max(1, ThemeMotion.duration("contentOut") + 20)
+        onTriggered: { root._cs = root._st; root._chov = root._hoverPill }
+    }
+    function _syncContent() {
+        if (_cs === _st && _chov === _hoverPill) { contentGate.stop(); return }
+        _cs = "none"; _chov = false
+        contentGate.restart()
+    }
+    on_StChanged: _syncContent()
+    on_HoverPillChanged: _syncContent()
+    // решта паузи входу (базова пауза слота мінус те, що вже відсиділа затримка гейта)
+    readonly property int _enterDelay: Math.max(0, Math.round(ThemeMotion.duration("morphIn") * 0.35) - contentGate.interval)
 
     // авто-розміри
     readonly property real _cw: compactWidth > 0 ? compactWidth : compactSlot.childrenRect.width + padding * 2
@@ -224,36 +248,54 @@ Item {
             MorphSlot {
                 id: compactSlot
                 host: clipLayer
+                enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.padding
-                shown: (root._st === "compact" && !root._hoverPill) || root._st === "closed"
+                shown: (root._cs === "compact" && !root._chov) || root._cs === "closed"
                 slotWidth: root._cw - root.padding * 2
                 slotHeight: root._ch
             }
             MorphSlot {
                 id: hoverSlot
                 host: clipLayer
+                enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.padding
-                shown: root._hoverPill
+                shown: root._cs === "compact" && root._chov
                 slotWidth: root._hw - root.padding * 2
                 slotHeight: root._hh
             }
+            // Непрозорий підклад під розгорнутим вмістом. Коли тіло росте, компактна/
+            // hover-смуга ще ~100 мс гасне (contentOut) і без цього шару просвічує крізь
+            // прозорі місця панелі — таби, заголовки, порожні рядки. Виглядає як бар,
+            // що наклався на відкриту панель. Колір і радіус ті самі, тож у compact
+            // підклад не видно, а в expanded він просто перекриває старий рядок.
+            Rectangle {
+                anchors.fill: parent
+                // лишаємо 1px під hairline-рамку тіла (Nothing), інакше підклад її перекриє
+                anchors.margins: Theme.settings.nothing ? ThemeNothing.hairline : 0
+                visible: root._st === "expanded" || root._st === "dialog"
+                radius: body.bodyRadius
+                color: body.bodyColor
+            }
+
             MorphSlot {
                 id: expandedSlot
                 host: clipLayer
+                enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.padding; padY: root.padding
-                shown: root._st === "expanded"
+                shown: root._cs === "expanded"
                 slotWidth: root._ew - root.padding * 2
                 slotHeight: root._eh - root.padding * 2
             }
             MorphSlot {
                 id: dialogSlot
                 host: clipLayer
+                enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.dialogPadding; padY: root.dialogPadding
-                shown: root._st === "dialog"
+                shown: root._cs === "dialog"
                 slotWidth: root._dw - root.dialogPadding * 2
                 slotHeight: root._dh - root.dialogPadding * 2
             }
@@ -261,12 +303,12 @@ Item {
 
         // Handlers у body: hit-area = поточна (анімована) форма, тож hover-pill не «відпускає» курсор.
         // Діти (кнопки в контенті) мають пріоритет, тап по порожньому місцю → clicked()
-        HoverHandler { id: hh; enabled: root._st !== "closed" }
+        HoverHandler { id: hh; enabled: root.interactive && root._st !== "closed" }
         // clicked() лише якщо стан не змінився між press і release (кнопка в контенті могла його змінити)
         TapHandler {
             id: th
             property string pressState: ""
-            enabled: root._st !== "closed"
+            enabled: root.interactive && root._st !== "closed"
             onPressedChanged: if (pressed) pressState = root._st
             onTapped: if (root._st === pressState) root.clicked()
         }

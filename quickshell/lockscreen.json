@@ -10,5 +10,69 @@
   "floatingShapes": true,
   "greeting": true,
   "powerButtons": true,
-  "successFlash": true
+  "successFlash": true,
+  "faceUnlock": true,
+  "layout": "center",
+  "clockStyle": "stacked",
+  "showSeconds": true,
+  "mediaWidget": true,
+  "weatherWidget": true,
+  "widgets": {
+    "clock": {
+      "x": 0.07671915690104165,
+      "y": 0.5344458912037038
+    },
+    "weather": {
+      "x": 0.7507283528645834,
+      "y": 0.17463469328703699,
+      "shape": "burst",
+      "scale": 1.35
+    },
+    "media": {
+      "x": 0.2496358235677083,
+      "y": 0.8707429108796296,
+      "shape": "pentagon"
+    },
+    "user": {
+      "x": 0.5,
+      "y": 0.1343525752314815
+    },
+    "date": {
+      "x": 0.5,
+      "y": 0.9287962962962963
+    },
+    "power": {
+      "x": 0.5,
+      "y": 0.7513896122685184
+    }
+  },
+  "devMode": false,
+  "devImportMango": true,
+  "devShowKeys": true,
+  "widgetsNothing": {
+    "clock": {
+      "x": 0.1828125,
+      "y": 0.19805555555555554
+    },
+    "weather": {
+      "x": 0.04479288736979168,
+      "y": 0.32629774305555564
+    },
+    "media": {
+      "x": 0.14291666666666664,
+      "y": 0.32565031828703705
+    },
+    "date": {
+      "x": 0.14744873046875,
+      "y": 0.9291652199074074
+    },
+    "user": {
+      "x": 0.5189595540364583,
+      "y": 0.18898075810185183
+    },
+    "power": {
+      "x": 0.5,
+      "y": 0.7344059606481481
+    }
+  }
 }

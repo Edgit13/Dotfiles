@@ -7,7 +7,7 @@
   mango = [ pkgs.mangowc ];                 # або pkgs.mango-nightly через flake mango
   shell = [ pkgs.quickshell ];              # nixpkgs-unstable; для git-версії — flake input
 
-  # --- Capture / OCR / Lens / запис (PillShell, Snap, QuickSnip) ---
+  # --- Capture / OCR / Lens / запис (screentool у bar shell) ---
   capture = [
     pkgs.grim
     pkgs.slurp
@@ -32,6 +32,8 @@
     pkgs.swaylock-effects       # AUR -git аналог є в nixpkgs
     pkgs.rofi
     pkgs.kitty                  # upkg / термінал у Task Manager
+    pkgs.gammastep              # нічний режим (Night light)
+    pkgs.easyeffects            # Audio Studio (EQ / RNNoise)
   ];
 
   # --- CLI/стиль rice ---

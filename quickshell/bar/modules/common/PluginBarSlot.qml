@@ -1,3 +1,4 @@
+import "root:/theme"
 import "root:/services"
 import QtQuick
 
@@ -14,7 +15,10 @@ Loader {
     active: !!plugin
     source: active ? PluginService.barQml(plugin) : ""
 
-    visible: active && status === Loader.Ready
+    // плагіни з'являються/зникають так само м'яко, як вбудовані модулі
+    opacity: active && status === Loader.Ready ? 1 : 0
+    visible: opacity > 0.01
+    Behavior on opacity { MotionAnimation { role: "fade" } }
 
     function applyHostProperties() {
         if (!item) return

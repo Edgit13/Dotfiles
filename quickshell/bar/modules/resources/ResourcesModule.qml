@@ -9,6 +9,8 @@ BarModule {
 
     signal resourcesRequested()
 
+    animate: true
+
     readonly property real ringSize: Math.max(Theme.components.dp(20), cross - Theme.space.sm)
     readonly property real cpu: PerformanceService.cpuPercent
     readonly property real ram: PerformanceService.ramPercent

@@ -6,7 +6,7 @@ import QtQuick
 //   fillColor     — колір плашки у спокої (за замовчуванням прозорий; accent → accentColor)
 //   stateColor    — колір hover/press-шару (зазвичай «on»-колір до fillColor)
 //   stateLayer    — false: без шару (коли hover сам змінює fillColor, як у Power)
-//   pressScale    — легке стискання при натисканні (1 = вимкнено)
+//   pressScale    — легке стискання при натисканні (1 = вимкнено; типово 0.96)
 // Контент кладеться всередину (default property → holder).
 Item {
     id: root
@@ -16,7 +16,7 @@ Item {
     property color fillColor: accent ? accentColor : "transparent"
     property color stateColor: Theme.color.fgSurface
     property bool stateLayer: true
-    property real pressScale: 1.0
+    property real pressScale: 0.96
     property int acceptedButtons: Qt.LeftButton
     default property alias content: holder.data
 

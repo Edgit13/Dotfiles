@@ -6,13 +6,17 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// NotificationGroup — сповіщення одного застосунку: заголовок + connected list карток;
-// у згорнутому вигляді — найновіша картка і «стопка» під нею.
+// NotificationGroup — сповіщення одного застосунку: заголовок + connected list карток.
+// У згорнутому вигляді — найновіша картка і «стопка» під нею.
+// modelData: { key, items, unread, pinned, latest } з NotificationService.appGroups()
 ColumnLayout {
     id: group
     required property var modelData
     readonly property string gkey: modelData.key
-    readonly property var gItems: NotificationService.itemsFor(gkey)
+    readonly property var gItems: modelData.items || []
+    readonly property var gLatest: modelData.latest
+    readonly property int gUnread: modelData.unread || 0
+    readonly property bool muted: NotificationService.isAppMuted(gkey)
     property bool expanded: false
 
     Layout.fillWidth: true
@@ -24,13 +28,38 @@ ColumnLayout {
         Layout.leftMargin: Theme.space.xs
         spacing: Theme.space.xs
 
+        Rectangle {
+            implicitWidth: Theme.components.dp(18)
+            implicitHeight: implicitWidth
+            radius: width / 2
+            color: group.muted ? "transparent" : Theme.color.primary
+            border.width: group.muted ? 1 : 0
+            border.color: Theme.color.outlineVariant
+            opacity: group.muted ? 0.55 : 1
+        }
         ThemedText {
             Layout.fillWidth: true
             text: group.gkey
             style: Theme.type.labelLarge
             emphasized: true
-            color: Theme.color.primary
+            color: group.muted ? Theme.color.fgSurfaceVariant : Theme.color.primary
             elide: Text.ElideRight
+        }
+        Rectangle {
+            visible: group.gUnread > 0
+            implicitWidth: unreadTxt.implicitWidth + Theme.space.sm
+            implicitHeight: Theme.components.dp(18)
+            radius: height / 2
+            color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
+            border.width: Theme.settings.nothing ? 1 : 0
+            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.35)
+            ThemedText {
+                id: unreadTxt
+                anchors.centerIn: parent
+                text: group.gUnread
+                style: Theme.type.labelSmall
+                color: Theme.color.fgPrimaryContainer
+            }
         }
         Rectangle {
             visible: group.gItems.length > 1
@@ -49,14 +78,20 @@ ColumnLayout {
             }
         }
         MaterialIconButton {
+            icon: group.muted ? "volume_off" : "volume_up"
+            width: Theme.components.dp(30); height: width
+            opacity: group.muted ? 1 : 0.6
+            onClicked: NotificationService.toggleMuteApp(group.gkey)
+        }
+        MaterialIconButton {
             visible: group.gItems.length > 1
             icon: group.expanded ? "expand_less" : "expand_more"
-            width: Theme.components.dp(32); height: width
+            width: Theme.components.dp(30); height: width
             onClicked: group.expanded = !group.expanded
         }
         MaterialIconButton {
             icon: "close"
-            width: Theme.components.dp(32); height: width
+            width: Theme.components.dp(30); height: width
             onClicked: NotificationService.clearApp(group.gkey)
         }
     }
@@ -90,6 +125,7 @@ ColumnLayout {
                     id: card
                     width: parent.width
                     notif: slot.modelData
+                    expanded: group.expanded
                     topR: slot.index === 0 ? Theme.shape.cardLarge : Theme.shape.listInner
                     bottomR: slot.index === slot.lastShown ? Theme.shape.cardLarge : Theme.shape.listInner
                     opacity: slot.shown ? 1 : 0

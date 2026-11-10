@@ -34,6 +34,20 @@ Singleton {
     readonly property bool hasEthernet: ethernetDevices.some(d => d.connected)
     readonly property bool hasVpn: vpnConnections.some(v => v.active)
 
+    // Розбиває рядок `nmcli -t` по неекранованих ':' і знімає екранування.
+    function _splitTerse(line) {
+        const out = []
+        let cur = ""
+        for (let i = 0; i < line.length; i++) {
+            const c = line[i]
+            if (c === "\\" && i + 1 < line.length) { cur += line[++i]; continue }
+            if (c === ":") { out.push(cur); cur = ""; continue }
+            cur += c
+        }
+        out.push(cur)
+        return out
+    }
+
     function scan() {
         if (scanning) return
         scanning = true
@@ -56,9 +70,9 @@ Singleton {
                 const lines = text.split("\n")
                 for (const line of lines) {
                     if (!line.trim()) continue
-                    // Надійна розбивка nmcli -t з урахуванням екранованих двокрапок (\:)
-                    const rawParts = line.split(/(?<!\\):/)
-                    const parts = rawParts.map(p => p.replace(/\\:/g, ":"))
+                    // Розбивка nmcli -t з урахуванням екранованих \: та \\ (без lookbehind —
+                    // QML JS-рушій його не підтримує, через що весь рядок лишався одним полем)
+                    const parts = root._splitTerse(line)
                     const ssid = parts[0]
                     if (!ssid) continue // приховані/порожні SSID пропускаємо
                     const signal = parseInt(parts[1], 10) || 0

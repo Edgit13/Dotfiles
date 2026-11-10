@@ -7,10 +7,10 @@
   },
   "mode": "expanded",
   "gamemode": {
-    "fpsSource": "auto",
+    "fpsSource": "mangohud",
     "overlayTemps": true,
     "overlayPos": "bottom-right",
-    "overlayFps": false,
+    "overlayFps": true,
     "overlayScale": 1,
     "overlayOpacity": 0.85
   },
@@ -20,5 +20,17 @@
     "size": 0.75,
     "duration": 2.4000000000000004
   },
-  "style": "full"
+  "style": "pill",
+  "openMode": "morph",
+  "modules": {
+    "mixer": true,
+    "tray": true
+  },
+  "record": {
+    "audio": "system"
+  },
+  "layout": {
+    "active": "dwindle"
+  },
+  "pillHover": false
 }

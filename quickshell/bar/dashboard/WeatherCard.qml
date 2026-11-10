@@ -4,75 +4,59 @@ import "root:/settings"
 import QtQuick
 import QtQuick.Layouts
 
-// WeatherCard — компактна погода для Overview: значок у squircle, температура, опис, min/max, відчувається.
+// WeatherCard — компактна плитка: значок + температура, опис, min/max.
 DashCard {
     id: root
+    fill: Theme.color.tertiaryContainer
+    cornerRadius: Theme.shape.radius("xl", height)
 
     function _t(v) { return isNaN(v) ? "—" : Math.round(v) + "°" }
+    readonly property color ink: Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgTertiaryContainer
+    readonly property bool ok: !WeatherService.loading && !WeatherService.error
 
-    RowLayout {
-        width: parent.width
-        height: implicitHeight
-        spacing: Theme.space.md
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
 
-        Rectangle {
-            Layout.preferredWidth: Theme.components.dp(64)
-            Layout.preferredHeight: Theme.components.dp(64)
-            radius: Theme.shape.radius("lg", height)
-            color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
-            border.width: Theme.settings.nothing ? 1 : 0
-            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: Theme.space.sm
             Text {
-                anchors.centerIn: parent
                 text: WeatherService.iconGlyph
                 font { family: Theme.type.icons; pixelSize: Theme.type.iconXL }
-                color: Theme.color.fgPrimaryContainer
+                color: root.ink
                 opacity: WeatherService.loading ? 0.4 : 1
                 Behavior on opacity { MotionAnimation { role: "fade" } }
             }
+            Item { Layout.fillWidth: true }
+            ThemedText {
+                visible: root.ok
+                text: root._t(WeatherService.temperatureC) + "C"
+                style: Theme.type.headlineMedium
+                emphasized: true
+                color: root.ink
+                font.family: Theme.settings.nothing ? Theme.type.dot : style.family
+            }
         }
 
-        ColumnLayout {
-            spacing: 0
-            Layout.fillWidth: true
+        Item { Layout.fillHeight: true }
 
-            ThemedText {
-                visible: WeatherService.loading
-                text: Lang.t("ui.weather.loading")
-                style: Theme.type.bodyMedium
-                color: Theme.color.fgSurfaceVariant
-            }
-            ThemedText {
-                visible: WeatherService.error && !WeatherService.loading
-                text: Lang.t("ui.weather.error")
-                style: Theme.type.bodyMedium
-                color: Theme.color.fgSurfaceVariant
-            }
-            ThemedText {
-                visible: !WeatherService.loading && !WeatherService.error
-                text: root._t(WeatherService.temperatureC) + "C"
-                style: Theme.type.displaySmall
-                emphasized: true
-            }
-            ThemedText {
-                visible: !WeatherService.loading && !WeatherService.error
-                text: WeatherService.description
-                style: Theme.type.bodyMedium
-                color: Theme.color.fgSurfaceVariant
-            }
-            ThemedText {
-                visible: !WeatherService.loading && !WeatherService.error
-                text: "↑" + root._t(WeatherService.highC) + "  ↓" + root._t(WeatherService.lowC)
-                         + (isNaN(WeatherService.feelsLikeC) ? "" : "  ·  " + Lang.t("ui.weather.feels") + " " + root._t(WeatherService.feelsLikeC))
-                style: Theme.type.labelSmall
-                color: Theme.color.fgSurfaceVariant
-            }
-            ThemedText {
-                visible: WeatherService.city.length > 0
-                text: WeatherService.city
-                style: Theme.type.labelSmall
-                color: Theme.color.outline
-            }
+        ThemedText {
+            Layout.fillWidth: true
+            text: WeatherService.loading ? Lang.t("ui.weather.loading")
+                : WeatherService.error ? Lang.t("ui.weather.error")
+                : WeatherService.description
+            style: Theme.type.titleSmall
+            color: root.ink
+            elide: Text.ElideRight
+        }
+        ThemedText {
+            Layout.fillWidth: true
+            visible: root.ok
+            text: "↑" + root._t(WeatherService.highC) + "  ↓" + root._t(WeatherService.lowC)
+            style: Theme.type.labelSmall
+            color: root.ink
+            opacity: 0.72
         }
     }
 }

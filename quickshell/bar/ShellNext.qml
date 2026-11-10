@@ -26,6 +26,8 @@ ShellRoot {
         MonitorService.ensure()        // легкий процес-монітор (procwatch.py)
         TimerService.ensure()          // перечитати таймери utimer і заново запустити очікування після входу
         SessionService.ensure()        // застосувати таймери простою до swayidle
+        NightLightService.ensure()     // застосувати нічний режим з налаштувань
+        UpdateService.ensure()         // фонова перевірка оновлень (не блокує pacman)
         PluginService.ensure()         // знайти ~/.config/edots/plugins + вбудовані плагіни
     }
 
@@ -35,6 +37,7 @@ ShellRoot {
     SettingsWindow    { id: settingsWindow }
     ScreenTool        { id: screenTool }
     LockScreen        { id: lockScreen }
+    LockDesktopEditor { id: lockDesktopEditor }
 
     Connections {
         target: ShellState
@@ -81,6 +84,10 @@ ShellRoot {
         function toggleMedia(): void { ShellState.toggleSurface("media") }
         function showPower(): void   { ShellState.openSurface("power") }
         function togglePower(): void { ShellState.toggleSurface("power") }
+        function showUpdates(): void   { ShellState.openSurface("updates") }
+        function toggleUpdates(): void { ShellState.toggleSurface("updates") }
+        function showDiagnostics(): void   { ShellState.openSurface("diagnostics") }
+        function toggleDiagnostics(): void { ShellState.toggleSurface("diagnostics") }
         function showBinds(): void   { ShellState.openSurface("binds") }
         function toggleBinds(): void { ShellState.toggleSurface("binds") }
         function showResources(): void   { ShellState.openSurface("resources") }
@@ -175,9 +182,31 @@ ShellRoot {
     }
 
     IpcHandler {
+        target: "nightlight"
+        function toggle(): void   { NightLightService.toggle() }
+        function on(): void       { NightLightService.setEnabled(true) }
+        function off(): void      { NightLightService.setEnabled(false) }
+        function setTemp(v: int): void { NightLightService.setTemp(v) }
+        function apply(): void    { NightLightService.apply() }
+    }
+
+    IpcHandler {
+        target: "updates"
+        function refresh(): void   { UpdateService.refresh() }
+        function updateAll(): void { UpdateService.updateAll() }
+    }
+
+    IpcHandler {
+        target: "diagnostics"
+        function refresh(): void { DiagnosticsService.refresh() }
+    }
+
+    IpcHandler {
         target: "screentool"
         function open(): void   { screenTool.start() }
         function close(): void  { screenTool.dismiss() }
+        function ocr(): void    { screenTool.startWith("ocr") }
+        function lens(): void   { screenTool.startWith("lens") }
         // під час запису toggle зупиняє його (той самий SUPER+U / Print)
         function toggle(): void { if (RecordService.recording) RecordService.stop(); else screenTool.toggle() }
         function stop(): void   { RecordService.stop() }
@@ -203,7 +232,11 @@ ShellRoot {
         function open(): void   { NotificationService.openCenter() }
         function close(): void  { NotificationService.closeCenter() }
         function clear(): void  { NotificationService.clearAll() }
+        function clearRead(): void { NotificationService.clearRead() }
+        function read(): void   { NotificationService.markAllRead() }
         function dnd(): void    { NotificationService.setDnd(!NotificationService.dnd) }
+        function muteApp(key: string): void   { NotificationService.muteApp(key) }
+        function unmuteApp(key: string): void { NotificationService.unmuteApp(key) }
     }
 
     // M3 OSD (гучність / яскравість)

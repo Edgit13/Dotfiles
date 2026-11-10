@@ -493,26 +493,14 @@ EOF3
 
 # ════════════════════════ ARCH-BASED ════════════════════════
 post_install() {
-  # ───────────────────── Edots QuickSnip (capture) ─────────────────────
-  # rishot is replaced by QuickSnip, which ships inside the rice.
-  # No external installer needed — just make sure the QML config is present.
-  if [ -d "$REPO_DIR/quickshell/QuickSnip" ]; then
-    c_ok "QuickSnip present (part of the rice)"
+  # ───────────────────── Edots screen tools (capture) ─────────────────────
+  # Screenshot / OCR / Lens / recording live in the bar shell (screentool),
+  # so there is no separate QuickSnip process to install.
+  if [ -f "$REPO_DIR/quickshell/bar/screentool/ScreenTool.qml" ]; then
+    c_ok "screentool present (part of the bar shell)"
   else
-    c_warn "quickshell/QuickSnip missing — capture bind will not work"
-    FAILED+=("quicksnip:missing")
-  fi
-
-  # ───────────────────── tui-player venv ─────────────────────
-  TUI_DIR="$REPO_DIR/edots/tui-player"
-  if [ "$DRY" != 1 ] && [ -d "$TUI_DIR" ]; then
-    c_info "venv for tui-player..."
-    python3 -m venv "$TUI_DIR/.venv" 2>/dev/null || { [ "$OS" = arch ] && sudo pacman -S --needed --noconfirm python; }
-    if [ -d "$TUI_DIR/.venv" ]; then
-      "$TUI_DIR/.venv/bin/pip" install --quiet --upgrade pip
-      "$TUI_DIR/.venv/bin/pip" install --quiet textual python-vlc mutagen && \
-        c_ok "tui-player venv" || { c_warn "pip (tui-player) failed"; FAILED+=("pip:tui-player"); }
-    fi
+    c_warn "quickshell/bar/screentool/ScreenTool.qml missing — capture bind will not work"
+    FAILED+=("screentool:missing")
   fi
 
   # ───────────────────── pnpm ─────────────────────
@@ -526,8 +514,8 @@ post_install() {
   c_warn "Cursor 'Moga-Black' — install manually if you want it."
 
   # ───────────────────── compile pam-auth for the lock screen ─────────────────────
-  PAM_SRC="$REPO_DIR/quickshell/lockscreen/pam-auth.c"
-  PAM_BIN="$REPO_DIR/quickshell/lockscreen/pam-auth"
+  PAM_SRC="$REPO_DIR/quickshell/bar/lockscreen/pam-auth.c"
+  PAM_BIN="$REPO_DIR/quickshell/bar/lockscreen/pam-auth"
   if [ "$DRY" != 1 ] && [ -f "$PAM_SRC" ]; then
     c_info "Compiling lockscreen/pam-auth..."
     if cc -O2 -o "$PAM_BIN" "$PAM_SRC" -lpam; then
@@ -658,13 +646,14 @@ install_arch() {
     vlc vlc-plugins-all
     # Shell / dev tools
     fish jq fastfetch neovim git ripgrep fd rofi tree curl
-    kdialog
-    # PAM headers for lockscreen/pam-auth.c
+    kdialog eza bat btop cava yazi fzf github-cli
+    # PAM headers for bar/lockscreen/pam-auth.c
     gcc pam
     # Notifications + clipboard history
     swaync cliphist
-    # OCR (QuickSnip)
+    # Screen capture: OCR, night light, updates, audio studio
     tesseract tesseract-data-eng
+    gammastep pacman-contrib easyeffects
   )
 
   if [ "$MINIMAL" = 1 ]; then
@@ -871,6 +860,6 @@ echo "  1. Relogin (so fish/swayidle/systemd pick up the environment)."
 echo "  2. Bar:      edots reload        (or: qs -p ~/.config/quickshell/bar/shell.qml)"
 echo "  3. Settings: edots settings"
 echo "  4. Health:   edots doctor"
-echo "  5. Lock:     bash ~/.config/quickshell/lockscreen/lock.sh"
+echo "  5. Lock:     edots lock"
 echo "  6. Idle/suspend: systemctl --user status swayidle.service"
 echo "─────────────────────────────────────────────────────"

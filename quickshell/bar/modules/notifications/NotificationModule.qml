@@ -4,13 +4,15 @@ import "root:/notifications"
 import "root:/modules/common"
 import QtQuick
 
-// NotificationModule — M3 Expressive: дзвіночок, що при новому сповіщенні розгортається у пігулку
-// з іконкою застосунку, заголовком і текстом (+ прогрес таймера), а потім згортається назад.
+// NotificationModule — M3 Expressive: дзвіночок із бейджем непрочитаних, що при новому
+// сповіщенні розгортається у пігулку з іконкою застосунку, заголовком, текстом,
+// позначкою закріплення та прогресом таймера, а потім згортається назад.
 // ЛКМ: центр сповіщень · ПКМ: сховати поточне / «Не турбувати» · СКМ: «Не турбувати».
 BarModule {
     id: root
 
     readonly property int count: NotificationService.count
+    readonly property int unread: NotificationService.unreadCount
     readonly property bool dnd: NotificationService.dnd
     readonly property var live: NotificationService.barLive ? NotificationService.latest : null
     readonly property bool expanded: !!live && !vertical
@@ -19,14 +21,19 @@ BarModule {
     property var shownItem: null
     onLiveChanged: if (live) shownItem = live
     readonly property bool critical: !!shownItem && shownItem.urgency === 2
+    readonly property bool pinned: !!shownItem && !!shownItem.pinned
+    readonly property bool unreadLive: !!shownItem && !shownItem.read
 
     readonly property bool active: count > 0 && !dnd
     readonly property string glyph: dnd ? "\ue7f6" : (count > 0 ? "\ue7f5" : "\ue7f4")
+    // бейдж показує саме непрочитані; якщо всі прочитані — лише тиха крапка
+    readonly property string badgeText: unread > 99 ? "99+" : String(unread)
+    readonly property bool quietDot: count > 0 && unread === 0
 
     function esc(t) { return String(t || "").replace(/<[^>]*>/g, "").replace(/&/g, "&amp;").replace(/</g, "&lt;") }
 
-    readonly property real bellW: root.count > 0 ? (bellRow.implicitWidth + Theme.space.sm * 2) : cross
-    readonly property real liveW: Math.min(Theme.components.dp(340), liveRow.implicitWidth + Theme.space.md * 2)
+    readonly property real bellW: bellRow.implicitWidth + Theme.space.sm * 2
+    readonly property real liveW: Math.min(Theme.components.dp(360), liveRow.implicitWidth + Theme.space.md * 2)
 
     animate: true
     widthRole: expanded ? "expand" : "collapse"
@@ -38,6 +45,8 @@ BarModule {
     readonly property color fg: tinted ? Theme.color.fgErrorContainer
                               : (expanded || active) ? Theme.color.fgSecondaryContainer
                               : Theme.color.fgSurfaceVariant
+    readonly property color badgeColor: critical ? Theme.color.error
+                                     : (dnd ? Theme.color.fgSurfaceVariant : Theme.color.primary)
 
     HoverHandler { onHoveredChanged: if (root.live) root.live.paused = hovered }
 
@@ -74,15 +83,47 @@ BarModule {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.glyph
                 color: root.fg
+                scale: root.unread > 0 ? 1 : 0.96
                 Behavior on color { MotionColorAnimation { role: "hover" } }
+                Behavior on scale { MotionAnimation { role: "press" } }
             }
-            ThemedText {
-                visible: root.count > 0
+
+            // бейдж непрочитаних
+            Rectangle {
+                visible: root.unread > 0 || scale > 0.01
                 anchors.verticalCenter: parent.verticalCenter
-                text: String(root.count)
-                style: Theme.type.labelSmall
-                emphasized: true
+                implicitWidth: Math.max(Theme.components.dp(15), badgeTxt.implicitWidth + Theme.space.xs)
+                implicitHeight: Theme.components.dp(15)
+                radius: height / 2
+                color: root.badgeColor
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Theme.color.fgSurface
+                scale: root.unread > 0 ? 1 : 0
+                Behavior on scale { MotionAnimation { role: "enter" } }
+                Behavior on implicitWidth { MotionAnimation { role: "stateChange" } }
+                Behavior on color { MotionColorAnimation { role: "stateChange" } }
+
+                ThemedText {
+                    id: badgeTxt
+                    anchors.centerIn: parent
+                    text: root.badgeText
+                    style: Theme.type.labelSmall
+                    emphasized: true
+                    color: Theme.color.fgPrimary
+                }
+            }
+
+            // усі прочитані, але історія не порожня — тиха крапка
+            Rectangle {
+                visible: root.quietDot || scale > 0.01
+                anchors.verticalCenter: parent.verticalCenter
+                implicitWidth: Theme.components.dp(5)
+                implicitHeight: implicitWidth
+                radius: width / 2
                 color: root.fg
+                opacity: 0.5
+                scale: root.quietDot ? 1 : 0
+                Behavior on scale { MotionAnimation { role: "enter" } }
             }
         }
 
@@ -108,6 +149,13 @@ BarModule {
             }
             ThemedText {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: root.unreadLive
+                text: "\u2022"
+                style: Theme.type.labelLarge
+                color: root.badgeColor
+            }
+            ThemedText {
+                anchors.verticalCenter: parent.verticalCenter
                 visible: !!root.shownItem
                 textFormat: Text.StyledText
                 text: root.shownItem
@@ -118,7 +166,25 @@ BarModule {
                 color: root.fg
                 elide: Text.ElideRight
                 maximumLineCount: 1
-                width: Math.min(implicitWidth, Theme.components.dp(340) - root.cross - Theme.space.md * 3)
+                width: Math.min(implicitWidth, Theme.components.dp(360) - root.cross - Theme.space.md * 3)
+            }
+            // закріплене сповіщення
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.pinned
+                text: "\ue840"
+                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                color: root.fg
+                opacity: 0.85
+            }
+            // скільки ще непрочитаних
+            ThemedText {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.unread > 1
+                text: "+" + (root.unread - 1)
+                style: Theme.type.labelSmall
+                color: root.fg
+                opacity: 0.75
             }
         }
 
@@ -145,13 +211,45 @@ BarModule {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.glyph
                 color: root.fg
+                Behavior on color { MotionColorAnimation { role: "hover" } }
+            }
+            // бейдж / крапка
+            Rectangle {
+                visible: root.unread > 0 || scale > 0.01
+                anchors.horizontalCenter: parent.horizontalCenter
+                implicitWidth: Math.max(Theme.components.dp(14), badgeV.implicitWidth + Theme.space.xs)
+                implicitHeight: Theme.components.dp(14)
+                radius: height / 2
+                color: root.badgeColor
+                scale: root.unread > 0 ? 1 : 0
+                Behavior on scale { MotionAnimation { role: "enter" } }
+                Behavior on implicitWidth { MotionAnimation { role: "stateChange" } }
+                Behavior on color { MotionColorAnimation { role: "stateChange" } }
+                ThemedText {
+                    id: badgeV
+                    anchors.centerIn: parent
+                    text: root.badgeText
+                    style: Theme.type.labelSmall
+                    emphasized: true
+                    color: Theme.color.fgPrimary
+                }
             }
             Rectangle {
-                visible: root.count > 0 && !root.live
+                visible: root.quietDot || scale > 0.01
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: 6; height: 6
-                radius: 3
-                color: Theme.color.error
+                width: 5; height: 5
+                radius: 2.5
+                color: root.fg
+                opacity: 0.5
+                scale: root.quietDot ? 1 : 0
+                Behavior on scale { MotionAnimation { role: "enter" } }
+            }
+            Text {
+                visible: root.pinned
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "\ue840"
+                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                color: root.fg
             }
         }
 

@@ -5,7 +5,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// CalendarCard — компактний блок "число/час" + сітка місяця.
+// CalendarCard — місяць із заокругленими клітинками, днями сусідніх місяців і крапками справ/таймерів.
 DashCard {
     id: root
 
@@ -21,124 +21,112 @@ DashCard {
         if (m > 11) { m = 0; y += 1 }
         viewMonth = m; viewYear = y
     }
+    function goToday() { viewYear = today.getFullYear(); viewMonth = today.getMonth() }
+    function _pad(n) { return (n < 10 ? "0" : "") + n }
 
     readonly property var dayNames: [0, 1, 2, 3, 4, 5, 6].map(i => Lang.t("ui.dow." + i))
+
+    // 6 тижнів × 7 днів, понеділок — перший
     readonly property var cells: {
-        const first = new Date(viewYear, viewMonth, 1)
-        const startOffset = (first.getDay() + 6) % 7
-        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+        const startOffset = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7
+        const t = today
         const arr = []
-        for (let i = 0; i < startOffset; i++) arr.push(null)
-        for (let d = 1; d <= daysInMonth; d++) arr.push(d)
-        while (arr.length % 7 !== 0) arr.push(null)
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(viewYear, viewMonth, 1 - startOffset + i)
+            const y = d.getFullYear(), m = d.getMonth(), n = d.getDate()
+            arr.push({
+                day: n,
+                inMonth: m === viewMonth,
+                isToday: n === t.getDate() && m === t.getMonth() && y === t.getFullYear(),
+                key: y + "-" + _pad(m + 1) + "-" + _pad(n)
+            })
+        }
         return arr
     }
 
-    component NavButton: Rectangle {
-        id: btn
-        property string icon: ""
-        signal clicked()
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: Theme.space.sm
 
-        implicitWidth: 28
-        implicitHeight: 28
-        radius: 14
-        color: nma.pressed
-             ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
-             : nma.containsMouse
-                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
-                 : "transparent"
-        Behavior on color { MotionColorAnimation { role: "hover" } }
-
-        Text {
-            anchors.centerIn: parent
-            text: btn.icon
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
-            color: Theme.color.fgSurfaceVariant
-        }
-
-        MouseArea {
-            id: nma
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: btn.clicked()
-        }
-    }
-
-    RowLayout {
-        width: parent.width
-        height: implicitHeight
-        spacing: Theme.space.lg
-
-        ColumnLayout {
-            spacing: 2
-            ThemedText { text: Qt.formatDateTime(root.today, "d"); style: Theme.type.displaySmall; emphasized: true }
-            ThemedText { text: Qt.formatDateTime(root.today, "MMM"); style: Theme.type.labelMedium; color: Theme.color.fgSurfaceVariant }
-        }
-
-        ColumnLayout {
-            spacing: Theme.space.xs
+        RowLayout {
             Layout.fillWidth: true
+            spacing: Theme.space.xs
 
-            RowLayout {
+            ThemedText {
                 Layout.fillWidth: true
-                spacing: Theme.space.xs
-                ThemedText {
-                    text: Lang.t("ui.month." + root.viewMonth) + " " + root.viewYear
-                    style: Theme.type.labelLarge
-                    Layout.fillWidth: true
-                }
-                NavButton { icon: "\ue5cb"; onClicked: root.shiftMonth(-1) }
-                NavButton { icon: "\ue5cc"; onClicked: root.shiftMonth(1) }
+                text: Lang.t("ui.month." + root.viewMonth) + " " + root.viewYear
+                style: Theme.type.titleMedium
+                emphasized: true
+                font.family: Theme.settings.nothing ? Theme.type.dot : style.family
+                font.capitalization: Theme.settings.nothing ? Font.AllUppercase : Font.MixedCase
             }
+            DashButton { variant: "subtle"; size: Theme.components.dp(32); icon: "\ue935"; onClicked: root.goToday() }
+            DashButton { variant: "subtle"; size: Theme.components.dp(32); icon: "\ue5cb"; onClicked: root.shiftMonth(-1) }
+            DashButton { variant: "subtle"; size: Theme.components.dp(32); icon: "\ue5cc"; onClicked: root.shiftMonth(1) }
+        }
 
-            GridLayout {
-                columns: 7
-                columnSpacing: 2
-                rowSpacing: 2
-                Repeater {
-                    model: root.dayNames
-                    ThemedText {
-                        required property string modelData
-                        text: modelData
-                        style: Theme.type.labelSmall
-                        color: Theme.color.fgSurfaceVariant
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.preferredWidth: 24
-                    }
+        GridLayout {
+            Layout.fillWidth: true
+            columns: 7
+            columnSpacing: Theme.space.xs
+            rowSpacing: 0
+            uniformCellWidths: true
+            Repeater {
+                model: root.dayNames
+                ThemedText {
+                    required property string modelData
+                    Layout.fillWidth: true
+                    text: modelData
+                    style: Theme.type.labelSmall
+                    color: Theme.color.fgSurfaceVariant
+                    horizontalAlignment: Text.AlignHCenter
                 }
-                Repeater {
-                    model: root.cells
-                    Item {
-                        required property var modelData
-                        Layout.preferredWidth: 24
-                        Layout.preferredHeight: 24
-                        readonly property bool isToday: modelData === root.today.getDate()
-                                                       && root.viewMonth === root.today.getMonth()
-                                                       && root.viewYear === root.today.getFullYear()
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Theme.shape.radius("full", height)
-                            color: parent.isToday ? Theme.color.primary : "transparent"
-                            visible: parent.modelData !== null
-                        }
-                        ThemedText {
-                            anchors.centerIn: parent
-                            visible: parent.modelData !== null
-                            text: parent.modelData || ""
-                            style: Theme.type.labelSmall
-                            color: parent.isToday ? Theme.color.fgPrimary : Theme.color.fgSurface
-                        }
-                        Rectangle {                                    // є активні справи на цей день
-                            readonly property string key: parent.modelData === null ? "" :
-                                root.viewYear + "-" + (root.viewMonth < 9 ? "0" : "") + (root.viewMonth + 1) + "-" + (parent.modelData < 10 ? "0" : "") + parent.modelData
-                            visible: key.length > 0 && (TodoService.dueMap[key] || 0) > 0
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.bottom: parent.bottom
-                            anchors.bottomMargin: 1
-                            width: 4; height: 4; radius: 2
-                            color: parent.isToday ? Theme.color.fgPrimary : Theme.color.primary
-                        }
+            }
+        }
+
+        GridLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            columns: 7
+            columnSpacing: Theme.space.xs
+            rowSpacing: Theme.space.xs
+            uniformCellWidths: true
+            uniformCellHeights: true
+
+            Repeater {
+                model: root.cells
+                Rectangle {
+                    id: cell
+                    required property var modelData
+                    readonly property int marks: (TodoService.dueMap[modelData.key] || 0) + (TimerService.dayMap[modelData.key] || 0)
+
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: Theme.components.dp(26)
+                    radius: modelData.isToday ? height / 2 : Theme.shape.radius("md", height)
+                    color: modelData.isToday ? (Theme.settings.nothing ? Theme.color.tertiary : Theme.color.primaryContainer)
+                         : (modelData.inMonth && !Theme.settings.nothing) ? Theme.color.surfaceContainerHighest
+                         : "transparent"
+                    Behavior on color { MotionColorAnimation { role: "hover" } }
+
+                    ThemedText {
+                        anchors.centerIn: parent
+                        text: cell.modelData.day
+                        style: Theme.type.labelMedium
+                        emphasized: cell.modelData.isToday
+                        color: cell.modelData.isToday ? (Theme.settings.nothing ? Theme.color.fgTertiary : Theme.color.fgPrimaryContainer)
+                             : cell.modelData.inMonth ? Theme.color.fgSurface
+                             : Theme.color.outline
+                        opacity: cell.modelData.inMonth || cell.modelData.isToday ? 1 : 0.55
+                    }
+                    Rectangle {
+                        visible: cell.marks > 0
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 3
+                        width: 4; height: 4; radius: 2
+                        color: cell.modelData.isToday ? (Theme.settings.nothing ? Theme.color.fgTertiary : Theme.color.fgPrimaryContainer)
+                             : (Theme.settings.nothing ? Theme.color.tertiary : Theme.color.primary)
                     }
                 }
             }

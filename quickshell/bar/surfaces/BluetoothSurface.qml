@@ -356,15 +356,18 @@ Item {
                                 Layout.fillWidth: true
                                 spacing: 1
                                 ThemedText {
+                                    Layout.fillWidth: true
                                     text: modelData.name || modelData.mac
                                     style: Theme.type.bodyMedium
                                     emphasized: true
                                     elide: Text.ElideRight
                                 }
                                 ThemedText {
+                                    Layout.fillWidth: true
                                     text: modelData.mac + (modelData.trusted ? " • Довірений" : "")
                                     style: Theme.type.labelSmall
                                     color: Theme.color.outline
+                                    elide: Text.ElideRight
                                 }
                             }
 

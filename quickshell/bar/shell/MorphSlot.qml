@@ -16,6 +16,8 @@ Item {
     property real originY: 0.5
     property real padX: 0
     property real padY: 0
+    // пауза перед проявою (мс); MorphSurface віднімає з неї затримку гейта
+    property int enterDelay: Math.round(ThemeMotion.duration("morphIn") * 0.35)
 
     readonly property real _hiddenScale: ThemeMotion.reduced ? 1 : 0.96
     readonly property real _hiddenLift:  ThemeMotion.reduced ? 0 : 8
@@ -39,7 +41,7 @@ Item {
 
     Behavior on opacity {
         SequentialAnimation {
-            PauseAnimation { duration: slot.shown ? Math.round(ThemeMotion.duration("morphIn") * 0.35) : 0 }
+            PauseAnimation { duration: slot.shown ? slot.enterDelay : 0 }
             MotionAnimation { role: slot.shown ? "contentIn" : "contentOut" }
         }
     }

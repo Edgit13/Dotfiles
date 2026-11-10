@@ -8,6 +8,8 @@ BarModule {
 
     signal activated()
 
+    animate: true
+
     BarButton {
         anchors.fill: parent
         fillColor: Theme.color.primaryContainer

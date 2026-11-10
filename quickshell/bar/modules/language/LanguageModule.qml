@@ -48,6 +48,11 @@ BarModule {
                         emphasized: item.isActive
                         color: item.isActive ? Theme.color.fgSurface : Theme.color.fgSurfaceVariant
                         opacity: item.isActive ? 1 : 0.6
+                        scale: item.isActive ? 1.0 : 0.92
+                        transformOrigin: Item.Center
+                        Behavior on color { MotionColorAnimation { role: "stateChange" } }
+                        Behavior on opacity { MotionAnimation { role: "stateChange" } }
+                        Behavior on scale { MotionAnimation { role: "stateChange" } }
                     }
                 }
             }

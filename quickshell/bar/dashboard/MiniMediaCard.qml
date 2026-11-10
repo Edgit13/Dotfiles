@@ -5,116 +5,87 @@ import "root:/media"
 import QtQuick
 import QtQuick.Layouts
 
-// MiniMediaCard — компактний плеєр для сітки на вкладці "Огляд" (смуга на всю ширину).
+// MiniMediaCard — слим-плеєр на Overview: розмитий фон з обкладинки, назва · виконавець, хвиля, кнопки.
 DashCard {
     id: root
+    pad: 0
+    implicitHeight: Theme.components.dp(100)
 
-    implicitHeight: 240
+    ArtBackdrop {
+        anchors.fill: parent
+        source: MediaService.artUrl
+        radius: root.cornerRadius
+        strength: Theme.settings.nothing ? 0.22 : 0.5
+    }
 
-    // ---- порожній стан ----
     RowLayout {
         anchors.centerIn: parent
         visible: !MediaService.has
         spacing: Theme.space.sm
-        Text {
-            text: "\ue405"
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconL }
-            color: Theme.color.fgSurfaceVariant
-        }
-        ThemedText {
-            text: Lang.t("ui.media.none")
-            style: Theme.type.bodyLarge
-            color: Theme.color.fgSurfaceVariant
-        }
+        Text { text: "\ue405"; font { family: Theme.type.icons; pixelSize: Theme.type.iconL } color: Theme.color.fgSurfaceVariant }
+        ThemedText { text: Lang.t("ui.media.none"); style: Theme.type.bodyLarge; color: Theme.color.fgSurfaceVariant }
     }
 
     RowLayout {
         anchors.fill: parent
+        anchors.margins: Theme.space.lg
         visible: MediaService.has
-        spacing: Theme.space.lg
+        spacing: Theme.space.md
 
         MediaArt {
-            Layout.preferredWidth: Math.min(Theme.components.dp(152), root.height - Theme.space.lg * 2)
-            Layout.preferredHeight: Layout.preferredWidth
+            Layout.preferredWidth: Theme.components.dp(64)
+            Layout.preferredHeight: Theme.components.dp(64)
             Layout.alignment: Qt.AlignVCenter
             source: MediaService.artUrl
             playing: MediaService.playing
             morphOnPause: true
-            baseRadius: Theme.shape.card
+            baseRadius: Theme.shape.radius("lg", Theme.components.dp(64))
         }
 
         ColumnLayout {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignVCenter
-            spacing: 2
+            spacing: 0
 
             ThemedText {
-                text: MediaService.identity
-                style: Theme.type.labelSmall
-                color: Theme.color.primary
-            }
-            ThemedText {
                 Layout.fillWidth: true
-                text: MediaService.title || Lang.t("ui.media.unknown")
-                style: Theme.type.titleMedium
+                text: (MediaService.title || Lang.t("ui.media.unknown")) + (MediaService.artist ? " · " + MediaService.artist : "")
+                style: Theme.type.titleSmall
                 emphasized: true
+                color: Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.primary
                 elide: Text.ElideRight
             }
-            ThemedText {
-                Layout.fillWidth: true
-                visible: text.length > 0
-                text: MediaService.artist
-                style: Theme.type.bodyMedium
-                color: Theme.color.fgSurfaceVariant
-                elide: Text.ElideRight
-            }
-
             MediaProgress {
                 Layout.fillWidth: true
-                Layout.topMargin: Theme.space.sm
                 value: MediaService.fraction
                 playing: MediaService.playing
                 seekable: MediaService.canSeek
                 onSeeked: f => MediaService.seek(f)
             }
-            RowLayout {
-                Layout.fillWidth: true
-                ThemedText {
-                    text: MediaService.fmt(MediaService.position)
-                    style: Theme.type.labelSmall
-                    color: Theme.color.fgSurfaceVariant
-                }
-                Item { Layout.fillWidth: true }
-                ThemedText {
-                    text: MediaService.length > 0 ? MediaService.fmt(MediaService.length) : "--:--"
-                    style: Theme.type.labelSmall
-                    color: Theme.color.fgSurfaceVariant
-                }
-            }
+        }
 
-            RowLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: Theme.space.xs
-                MediaButton {
-                    icon: "\ue045"
-                    size: Theme.components.dp(40)
-                    enabled: MediaService.canPrev
-                    onClicked: MediaService.previous()
-                }
-                MediaButton {
-                    icon: MediaService.playing ? "\ue034" : "\ue037"
-                    variant: "filled"
-                    size: Theme.components.dp(52)
-                    morphed: MediaService.playing
-                    enabled: MediaService.canToggle
-                    onClicked: MediaService.togglePlay()
-                }
-                MediaButton {
-                    icon: "\ue044"
-                    size: Theme.components.dp(40)
-                    enabled: MediaService.canNext
-                    onClicked: MediaService.next()
-                }
+        RowLayout {
+            Layout.alignment: Qt.AlignVCenter
+            spacing: Theme.space.xs
+            MediaButton {
+                icon: "\ue045"; variant: "tonal"
+                size: Theme.components.dp(40)
+                enabled: MediaService.canPrev
+                onClicked: MediaService.previous()
+            }
+            MediaButton {
+                icon: MediaService.playing ? "\ue034" : "\ue037"
+                variant: "filled"
+                morphed: MediaService.playing
+                size: Theme.components.dp(48)
+                enabled: MediaService.canToggle
+                onClicked: MediaService.togglePlay()
+            }
+            MediaButton {
+                icon: "\ue044"; variant: "tonal"
+                size: Theme.components.dp(40)
+                enabled: MediaService.canNext
+                onClicked: MediaService.next()
             }
         }
     }

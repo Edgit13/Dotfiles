@@ -11,6 +11,17 @@ Item {
     property alias center: centerGrid.data
     property alias trailing: trailingGrid.data
 
+    // Геометрія груп — потрібна стилю "islands" для фонових капсул.
+    readonly property real leadingX: leadingGrid.x
+    readonly property real leadingWidth: leadingGrid.width
+    readonly property real leadingHeight: leadingGrid.height
+    readonly property real centerX: centerGrid.x
+    readonly property real centerWidth: centerGrid.width
+    readonly property real centerHeight: centerGrid.height
+    readonly property real trailingX: trailingGrid.x
+    readonly property real trailingWidth: trailingGrid.width
+    readonly property real trailingHeight: trailingGrid.height
+
     GridLayout {
         id: leadingGrid
         columns: root.vertical ? 1 : 999

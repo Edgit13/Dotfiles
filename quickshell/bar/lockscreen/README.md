@@ -1,50 +1,69 @@
-# Quickshell Lock Screen (MangoWC / EndeavourOS)
+# Lock screen (MangoWC / Quickshell)
 
-A session-lock screen for Quickshell using `ext-session-lock-v1`, styled from
-`~/.config/quickshell/colors.json` (auto-reloads when the file changes).
+The lock screen lives inside the bar shell at `quickshell/bar/lockscreen/`.
+It uses `ext-session-lock-v1`, reads `~/.config/quickshell/colors.json`
+(reloading when the palette changes) and is owned by the running bar process —
+there is no separate lock-screen instance to install.
 
 ## What you get
 - Big monospace clock + date
 - User avatar + name, PAM password field (Enter to unlock, Esc to clear)
 - Show/hide password toggle, attempt counter, per-attempt error state
 - Suspend / reboot / poweroff with confirmation overlay
-- IPC hooks (only when run via the ~/.config/ilock symlink below): `qs -c ilock ipc call ilock relock` / `quit`
+- Optional **Face ID** (webcam, local embeddings via YuNet + SFace) — see the
+  main README; enroll with `edots faceid enroll`, then enable it in
+  Settings → Lock screen. The password path is unchanged.
+- IPC target `ilock` on the bar shell: `relock` / `quit`
+
+## Designs
+The scene follows the active theme design (`Theme.settings.nothing`):
+
+- **Material 3** (`LockM3.qml`) — expressive clock, floating shapes, shape-based
+  password dots.
+- **Nothing** (`LockNothing.qml`) — dot-matrix clock (Doto), seconds strip,
+  thin-outline chips, dot-grid wallpaper veil and the red `#D71921` accent.
+  Its password field honours Settings → Password style (`shapes` / `dots` /
+  `text`).
+
+Both scenes share `LockWidget` / `LockWidgetPanel`. In **Settings → Lock screen**
+you can drag widgets directly in the preview; shape, colour and size are edited
+in the panel below it. Positions are stored per design in `lockscreen.json`
+(`widgets` for M3, `widgetsNothing` for Nothing), so the two layouts never
+interfere.
+
+All motion uses `ThemeMotion`, so Reduce Motion, Animation Speed and
+animations-off are respected in both designs. Preview is available in Settings
+or full screen (the button under the preview).
 
 ## Install
-Run the self-extracting installer:
+`./install.sh` (or `./sync.sh install`) compiles the helper and links the
+config. To compile it manually:
 
-    sh ./install-quickshell-lock.run
+    gcc -O2 -o ~/.config/quickshell/bar/lockscreen/pam-auth \
+        ~/.config/quickshell/bar/lockscreen/pam-auth.c -lpam
 
-It will:
-1. Extract `lockscreen/` into `~/.config/quickshell/lockscreen/`
-2. Compile `pam-auth.c` -> `~/.config/quickshell/lockscreen/pam-auth`
-   (needs `base-devel` + `pam`; EndeavourOS ships base-devel by default)
-3. Install the PAM service to `/etc/pam.d/quickshell-lock` (via sudo)
-4. Verify everything works and print next steps
+It also installs the PAM service to `/etc/pam.d/quickshell-lock` (via sudo).
+Requires `base-devel` and `pam` headers.
 
 ## Use
 
-Start the lock (locks immediately, quits on unlock):
+Lock through the bar shell:
 
-    qs -p ~/.config/quickshell/lockscreen
+    qs -p ~/.config/quickshell/bar/shell.qml ipc call ilock relock
 
-MangoWC keybind (`~/.config/mangowc/config.conf`):
+or simply:
 
-    bind=SUPER,escape,exec,qs -p ~/.config/quickshell/lockscreen
+    edots lock
 
-Auto-lock on idle / before sleep (add to MangoWC `autostart` or a systemd user unit):
+MangoWC keybind (`~/.config/mango/binds.conf`):
 
-    swayidle -w \
-        timeout 600 'qs -p ~/.config/quickshell/lockscreen' \
-        before-sleep 'qs -p ~/.config/quickshell/lockscreen'
+    bind=SUPER,L,exec,edots lock
+
+Auto-lock on idle / before sleep is handled by `edots` session timers, which
+drive `swayidle` and the same `ilock` IPC target.
 
 ## Notes
 - Requires MangoWC built with `ext-session-lock-v1` support (standard in recent builds).
 - Auth runs as your own user against PAM `system-auth` — no sudo needed.
-- Colors are read from `../colors.json` relative to the shell; delete that file
+- Colors are read from `~/.config/quickshell/colors.json`; delete that file
   and it falls back to the embedded palette.
-
-## IPC (optional)
-If you want instance control (e.g. relock from a script), symlink the shell:
-    ln -s ~/.config/quickshell/lockscreen ~/.config/ilock
-    qs -c ilock        # instead of -p

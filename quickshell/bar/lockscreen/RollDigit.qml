@@ -1,4 +1,5 @@
 import QtQuick
+import "root:/theme"
 
 // RollDigit — цифра, що плавно «перегортається» (старе значення виїжджає вгору й гасне, нове піднімається знизу).
 Item {
@@ -27,7 +28,8 @@ Item {
         roll.restart()
     }
 
-    NumberAnimation { id: roll; target: dg; property: "t"; from: 0; to: 1; duration: 620; easing.type: Easing.OutCubic }
+    // рух підкоряється ThemeMotion (Reduce Motion / швидкість / вимкнені анімації)
+    MotionAnimation { id: roll; target: dg; property: "t"; from: 0; to: 1; role: "fade" }
 
     Text { id: probe; visible: false; text: "0"; font { family: dg.fam; pixelSize: dg.px } }
     Text {
