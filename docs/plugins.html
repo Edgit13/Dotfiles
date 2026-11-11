@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plugins — Edots</title>
+<meta name="description" content="Edots plugin manifest format, folders and CLI.">
+<link rel="icon" href="assets/img/icon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt=""><span>Edots</span></a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="install.html">Install</a>
+      <a href="keybinds.html">Keybinds</a>
+      <a href="themes.html">Themes</a>
+      <a href="plugins.html" aria-current="page">Plugins</a>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="hero wrap" style="padding-bottom:24px">
+    <span class="eyebrow"><span class="dot"></span> Plugins</span>
+    <h1 style="font-size:clamp(38px,6vw,64px)">A folder<br>and a manifest</h1>
+    <p class="lede">A plugin is plain QML. It can add a surface, a bar module, or both.
+      There is no build step and no sandbox — it runs inside the shell, so only enable code you trust.</p>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Where plugins live</h2>
+      <div class="prose">
+        <pre><code>~/.config/edots/plugins/&lt;id&gt;/plugin.json
+~/.config/edots/plugins/&lt;id&gt;/&lt;surface&gt;.qml
+
+# bundled examples
+~/.config/quickshell/bar/plugins/&lt;id&gt;/</code></pre>
+        <pre><code>edots plugin              # installed plugins and their state
+edots plugin folder       # open the user plugin folder
+edots plugin path         # print it
+edots plugin reload       # rescan folders
+edots plugin enable world-clock
+edots plugin open world-clock</code></pre>
+        <p>Installed plugins and their enabled state are recorded in
+          <code>quickshell/plugins.json</code>. Bundled examples can be copied into the user folder
+          and edited freely.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Manifest</h2>
+      <div class="prose">
+        <p>This is the real manifest of the bundled <code>world-clock</code> plugin. Every key except
+          <code>id</code> is optional in practice, but a name, a version and at least one of
+          <code>surface</code> / <code>bar</code> make it useful.</p>
+        <pre><code>{
+  "id": "world-clock",
+  "name": "World Clock",
+  "description": "Local time plus a few cities. Also available as a compact bar module.",
+  "version": "1.0.0",
+  "author": "Edots",
+  "icon": "public",
+  "defaultEnabled": false,
+  "surface": {
+    "qml": "WorldClock.qml",
+    "width": 520,
+    "height": 460,
+    "end": true,
+    "typing": false
+  },
+  "bar": {
+    "qml": "WorldClockBar.qml",
+    "position": "trailing"
+  }
+}</code></pre>
+
+        <h3>Fields</h3>
+        <table>
+          <tr><th>Field</th><th>Meaning</th></tr>
+          <tr><td><code>id</code></td><td>Folder name and CLI handle. Keep it stable.</td></tr>
+          <tr><td><code>surface.qml</code></td><td>Component opened as a floating surface.</td></tr>
+          <tr><td><code>surface.width</code>, <code>height</code></td><td>Initial size in logical pixels.</td></tr>
+          <tr><td><code>surface.end</code></td><td>Close the surface when focus is lost.</td></tr>
+          <tr><td><code>surface.typing</code></td><td>Keep the surface open while the keyboard is used.</td></tr>
+          <tr><td><code>bar.qml</code></td><td>Component placed in the bar.</td></tr>
+          <tr><td><code>bar.position</code></td><td><code>leading</code>, <code>center</code> or <code>trailing</code>.</td></tr>
+          <tr><td><code>icon</code></td><td>Material Symbols name, used in lists and the bar.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Writing one</h2>
+      <div class="prose">
+        <p>Start from the bundled example and reload:</p>
+        <pre><code>cp -r ~/.config/quickshell/bar/plugins/world-clock \
+      ~/.config/edots/plugins/my-plugin
+$EDITOR ~/.config/edots/plugins/my-plugin/plugin.json
+edots plugin reload
+edots plugin open my-plugin</code></pre>
+        <p>A plugin QML file is a normal <code>Item</code>. It can use the shell's theme singletons,
+          services and controls because it is loaded by the same Quickshell process. Keep the
+          surface self-contained and cheap to create — it is instantiated when opened.</p>
+      </div>
+
+      <div class="note">
+        <strong>Safety:</strong> plugins have the same access as the shell itself. There is no
+        signing and no registry yet, so read the QML before enabling something from a stranger.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Edots — a MangoWM + Quickshell rice by Nook.</span>
+    <span>MIT licensed.</span>
+    <nav>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+      <a href="https://github.com/Edgit13/Dotfiles/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://quickshell.org">Quickshell</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+
+</body>
+</html>

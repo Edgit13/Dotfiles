@@ -16,8 +16,9 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 [![Design](https://img.shields.io/badge/Design-Material%203%20%7C%20Nothing-CDBFF0?style=flat-square&labelColor=1a1a1a)](https://github.com/Edgit13/Dotfiles)
 [![License](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/Edgit13/Dotfiles?style=flat-square&color=6B4EBA&label=stars)](https://github.com/Edgit13/Dotfiles/stargazers)
+[![Lint](https://github.com/Edgit13/Dotfiles/actions/workflows/lint.yml/badge.svg)](https://github.com/Edgit13/Dotfiles/actions/workflows/lint.yml)
 
-[**Features**](#-features) · [**Gallery**](#-gallery) · [**Install**](#-installation) · [**Keybinds**](#-keybinds) · [**IPC**](#-ipc) · [**Colors**](#-color-system) · [**Structure**](#-structure)
+[**Features**](#-features) · [**Gallery**](#-gallery) · [**Install**](#-installation) · [**Keybinds**](#-keybinds) · [**IPC**](#-ipc) · [**Colors**](#-color-system) · [**Docs**](docs/index.html) · [**Structure**](#-structure)
 
 <br>
 
@@ -453,10 +454,38 @@ quickshell/bar/               # the shell
 
 mango/                        # MangoWM config (binds, rules, animations, swayidle, scripts)
 edots/                        # CLI tools: edots, task-manager, tool-manager (upkg, utimer)
+docs/                         # static docs site (GitHub Pages)
+tools/                        # lint.sh, release.sh, slim-history.sh
 systemd/                      # user unit: swayidle
 fish/ ghostty/ kitty/ gtk-3.0/ gtk-4.0/ firefox/ rofi/ nvim/
 install.sh  sync.sh           # bootstrap and symlink manager
+Makefile  CHANGELOG.md        # tasks and release notes
 ```
+
+<br>
+
+## 🧪 Development
+
+```bash
+make lint        # QML (Qt 6 syntax), shellcheck, Python, JSON
+make qml         # QML only, fast
+pre-commit install   # run the same checks before every commit
+```
+
+CI runs the same script on every push and pull request. Releases are tagged:
+
+```bash
+./tools/release.sh 1.2.0     # requires a CHANGELOG section and a clean tree
+```
+
+The docs are plain HTML with no build step:
+
+```bash
+make docs        # preview at http://localhost:8080
+```
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed, and [docs/README.md](docs/README.md)
+for how the site is laid out.
 
 <br>
 

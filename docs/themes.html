@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Themes — Edots</title>
+<meta name="description" content="Material 3 Expressive and Nothing themes, wallpaper palettes, transitions and app sync in Edots.">
+<link rel="icon" href="assets/img/icon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt=""><span>Edots</span></a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="install.html">Install</a>
+      <a href="keybinds.html">Keybinds</a>
+      <a href="themes.html" aria-current="page">Themes</a>
+      <a href="plugins.html">Plugins</a>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="hero wrap" style="padding-bottom:24px">
+    <span class="eyebrow"><span class="dot"></span> Themes</span>
+    <h1 style="font-size:clamp(38px,6vw,64px)">One palette,<br>two languages</h1>
+    <p class="lede">The palette comes from your wallpaper. The <strong>design</strong> decides how it
+      is allowed to look: Material 3 tonal surfaces, or Nothing monochrome with a single red accent.
+      Everything else — widgets, keybinds, layout — stays identical.</p>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Material 3 Expressive vs Nothing</h2>
+      <div class="compare">
+        <div class="head m">Material 3 Expressive</div>
+        <div class="head n">Nothing</div>
+        <div>Tonal colour roles, large rounded shapes, soft elevation shadows.</div>
+        <div>Black and off-white, hairline borders, no gradients, one red accent.</div>
+        <div>Rounded pills and filled buttons; state is shown with colour.</div>
+        <div>Dot-matrix numerals and labels; state is shown with weight and dots.</div>
+        <div>Material Symbols Rounded, Google Sans Flex.</div>
+        <div>SF Mono / JetBrains Mono, dot-matrix display faces.</div>
+        <div>Corner style, elevation, shadows and UI scale are shared settings.</div>
+        <div>Same settings — the Nothing design just interprets them strictly.</div>
+      </div>
+
+      <div class="note">
+        The lock screen follows the design too: <code>LockM3.qml</code> and
+        <code>LockNothing.qml</code> share the same state and settings.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Switch and tune</h2>
+      <div class="prose">
+        <pre><code>edots theme                  # design, mode, accent and applied palette
+edots theme toggleDesign     # Material &lt;-&gt; Nothing
+edots theme setMode dark     # dark | light | toggleMode
+edots theme setTransition dots   # off | fade | dots | scan
+edots theme sync             # repaint GTK, terminals, Firefox, rofi and KDE</code></pre>
+        <p>All of it is also in <strong>Settings → Theme</strong>: design, light/dark mode, transition,
+          corner style, shadows, UI scale and animation speed. The transition plays whenever the
+          design or the mode changes.</p>
+
+        <h3>Shared theme fields</h3>
+        <table>
+          <tr><th>Field</th><th>Values</th></tr>
+          <tr><td><code>design</code></td><td><code>material</code>, <code>nothing</code></td></tr>
+          <tr><td><code>mode</code></td><td><code>dark</code>, <code>light</code>, <code>system</code></td></tr>
+          <tr><td><code>transition</code></td><td><code>off</code>, <code>fade</code>, <code>dots</code>, <code>scan</code></td></tr>
+          <tr><td><code>cornerStyle</code></td><td>shape tokens used by every surface</td></tr>
+          <tr><td><code>uiScale</code>, <code>animationSpeed</code></td><td>global scale and motion multiplier</td></tr>
+          <tr><td><code>shadows</code></td><td>elevation shadows on cards and popups</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Wallpaper palette</h2>
+      <div class="prose">
+        <p><code>wallcolors.py</code> extracts a palette from the current wallpaper and writes it to
+          the files each application reads. Changing the wallpaper can recolour the whole session
+          in one pass:</p>
+        <table>
+          <tr><th>Target</th><th>File</th></tr>
+          <tr><td>Shell</td><td><code>quickshell/colors.json</code></td></tr>
+          <tr><td>GTK 3 / GTK 4</td><td><code>gtk-3.0/gtk-colors.css</code>, <code>gtk-4.0/gtk-colors.css</code></td></tr>
+          <tr><td>kitty / ghostty</td><td><code>kitty-colors.conf</code>, <code>ghostty-colors.conf</code></td></tr>
+          <tr><td>Firefox chrome</td><td><code>firefox-colors.css</code> in the active profile</td></tr>
+          <tr><td>rofi</td><td><code>rofi/colors.rasi</code></td></tr>
+          <tr><td>KDE / Qt apps</td><td><code>kdeglobals</code></td></tr>
+        </table>
+        <p>The wallpaper selector can filter by the dominant colour. That index is built once by
+          the installer and can be rebuilt in <strong>Settings → Wallpapers → Analyze wallpapers</strong>;
+          it lives in <code>~/.cache/quickshell/wallpaper-colors.json</code> and never modifies images.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Night light</h2>
+      <div class="prose">
+        <p>Warm the screen with gammastep — manual temperature or a daily schedule. It is a one-shot
+          helper, not a daemon: it applies the config and exits.</p>
+        <pre><code>edots nightlight on
+edots nightlight temp 4000
+edots nightlight status
+edots nightlight off</code></pre>
+        <p>Settings live in <code>quickshell/nightlight.json</code>: enabled, mode
+          (<code>manual</code> or <code>schedule</code>), temperature, day and night temperature,
+          sunset and sunrise.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Lock screen designs</h2>
+      <div class="split">
+        <figure>
+          <img src="assets/img/settings.png" alt="Edots settings — theme page">
+          <figcaption>Settings → Theme — design, mode, transition, scale</figcaption>
+        </figure>
+        <div class="prose">
+          <p>The lock screen has its own settings page under <strong>System → Lock screen</strong>:
+            layout, clock style and weight, widgets, wallpaper fill and effects, password style,
+            power buttons, Face ID and an advanced developer mode.</p>
+          <p>Developer mode only whitelists safe hotkeys while locked — screenshot, media, volume
+            and brightness. They never unlock the session.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Edots — a MangoWM + Quickshell rice by Nook.</span>
+    <span>MIT licensed.</span>
+    <nav>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+      <a href="https://github.com/Edgit13/Dotfiles/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://quickshell.org">Quickshell</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+
+</body>
+</html>

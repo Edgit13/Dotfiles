@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install — Edots</title>
+<meta name="description" content="Requirements and installation steps for Edots on Arch-based distributions, with NixOS notes.">
+<link rel="icon" href="assets/img/icon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt=""><span>Edots</span></a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="install.html" aria-current="page">Install</a>
+      <a href="keybinds.html">Keybinds</a>
+      <a href="themes.html">Themes</a>
+      <a href="plugins.html">Plugins</a>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="hero wrap" style="padding-bottom:24px">
+    <span class="eyebrow"><span class="dot"></span> Install</span>
+    <h1 style="font-size:clamp(38px,6vw,64px)">Get it running</h1>
+    <p class="lede">Edots targets <strong>Arch-based distributions</strong> with MangoWM and Quickshell.
+      The installer also has a generic path for Debian, Fedora, openSUSE and Gentoo, and a
+      NixOS bootstrap — anything missing from those repos is listed instead of aborting.</p>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Requirements</h2>
+      <div class="prose">
+        <ul>
+          <li><strong>Quickshell</strong> with Io, Wayland, Services, Networking, UPower, Pipewire and Mpris.</li>
+          <li><strong>MangoWM</strong> (<code>mangowc-git</code>) — the shell talks to its JSON <code>mmsg</code> IPC.</li>
+          <li><strong>Fonts:</strong> JetBrainsMono Nerd Font, Material Symbols Rounded, Google Sans Flex.
+              SF Pro Display and SF Mono are optional and proprietary.</li>
+          <li><strong>Tools:</strong> matugen, awww, cliphist, brightnessctl, nmcli, rfkill, playerctl,
+              grim, tesseract, python3, python-pillow, jq.</li>
+          <li><strong>Lock screen:</strong> gcc and PAM headers — <code>install.sh</code> builds <code>pam-auth</code>.</li>
+          <li><strong>Face ID:</strong> a webcam. Setup keeps OpenCV in a private venv and downloads
+              two ONNX models (~38 MB); the system Python is untouched.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Install</h2>
+      <div class="prose">
+        <pre><code>git clone https://github.com/Edgit13/Dotfiles ~/Dotfiles
+cd ~/Dotfiles
+./install.sh</code></pre>
+        <p>Or straight from the repository:</p>
+        <pre><code>curl -fsSL https://raw.githubusercontent.com/Edgit13/Dotfiles/master/install.sh | bash</code></pre>
+
+        <h3>Flags</h3>
+        <table>
+          <tr><th>Flag</th><th>What it does</th></tr>
+          <tr><td><code>--auto</code></td><td>No questions. Aliases: <code>--quickstart</code>, <code>--yes</code>.</td></tr>
+          <tr><td><code>--minimal</code></td><td>Skip optional apps (vlc, nautilus, dolphin, firefox, flatpak, …).</td></tr>
+          <tr><td><code>--no-deps</code></td><td>Skip packages and only deploy configs plus the finishing steps.</td></tr>
+          <tr><td><code>--dry-run</code></td><td>Print the plan and change nothing. Not available for the NixOS path.</td></tr>
+          <tr><td><code>--restore</code></td><td>Remove the symlinks and restore the latest <code>~/.config-backup-*</code>.</td></tr>
+          <tr><td><code>--disk=</code>, <code>--user=</code>, <code>--password=</code></td><td>NixOS auto-installer only.</td></tr>
+        </table>
+
+        <h3>What the installer does</h3>
+        <ol>
+          <li>Clones the repo and <code>Rice-Wallpapers</code> into <code>~/Pictures/Wallpapers</code>.</li>
+          <li>Installs packages from pacman and the AUR, bootstrapping <code>yay</code> when needed.</li>
+          <li>Installs Google Sans Flex.</li>
+          <li>Runs <code>./sync.sh install</code> — symlinks configs into <code>~/.config</code> and installs the <code>edots</code> command.</li>
+          <li>Registers and starts the <code>swayidle</code> user service.</li>
+          <li>Builds <code>lockscreen/pam-auth</code>.</li>
+          <li>Generates the first palette from the first wallpaper.</li>
+          <li>Builds the wallpaper colour index (needs python-pillow).</li>
+          <li>Links the Firefox chrome files into the profile Firefox actually launches.</li>
+        </ol>
+      </div>
+
+      <div class="note">
+        <strong>After installing:</strong> log out and back in so fish, swayidle and systemd pick up
+        the environment, then run <code>passwd</code> if this is a fresh account —
+        the lock screen needs a real password.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Start and check</h2>
+      <div class="prose">
+        <pre><code>edots reload          # restart the bar
+edots doctor          # packages, fonts, symlinks, services, palette
+edots settings        # open Settings (Super+A)</code></pre>
+        <p><code>edots doctor</code> verifies packages, fonts, config symlinks, the running bar,
+          systemd services, the palette and the Firefox chrome. It also has a JSON mode for scripts.</p>
+        <p>Wallpaper colours need an index. The installer runs it once; later use
+          <strong>Settings → Wallpapers → Analyze wallpapers</strong>. It writes
+          <code>~/.cache/quickshell/wallpaper-colors.json</code> and never touches your images.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Update</h2>
+      <div class="prose">
+        <pre><code>cd ~/Dotfiles
+git pull
+./install.sh --no-deps      # re-deploy symlinks and finishing steps
+edots reload</code></pre>
+        <p>The update centre in the bar checks pacman, AUR and Flatpak and never installs anything
+          on its own. Use <code>edots updates</code> to open it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>NixOS</h2>
+      <div class="prose">
+        <p>The <code>nix/</code> folder has modules for NixOS plus home-manager, including the
+          MangoWM flake, Quickshell and the capture stack. See
+          <a href="https://github.com/Edgit13/Dotfiles/blob/master/nix/README.md">nix/README.md</a>.
+          <code>install.sh</code> validates the flake and prints the integration steps.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Edots — a MangoWM + Quickshell rice by Nook.</span>
+    <span>MIT licensed.</span>
+    <nav>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+      <a href="https://github.com/Edgit13/Dotfiles/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://quickshell.org">Quickshell</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+
+</body>
+</html>

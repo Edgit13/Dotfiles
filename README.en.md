@@ -15,7 +15,7 @@ Material 3 Expressive and Nothing — two designs, one wallpaper palette.
 [![Quickshell](https://img.shields.io/badge/Shell-Quickshell-E01B24?style=flat-square)](https://quickshell.org)
 [![License](https://img.shields.io/badge/License-MIT-000000?style=flat-square)](LICENSE)
 
-[**Full documentation →**](README.md) · [Features](README.md#-features) · [Gallery](README.md#-gallery) · [Install](README.md#-installation) · [Keybinds](README.md#-keybinds)
+[**Full documentation →**](README.md) · [Features](README.md#-features) · [Gallery](README.md#-gallery) · [Install](README.md#-installation) · [Keybinds](README.md#-keybinds) · [Docs site](docs/index.html)
 
 <br>
 

@@ -1,0 +1,12 @@
+# Local hook — no network, no virtualenv. Requires pre-commit (pipx/uv/pacman).
+#   pre-commit install
+#   pre-commit run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: edots-lint
+        name: edots lint (QML · shell · Python · JSON)
+        entry: ./tools/lint.sh
+        language: system
+        pass_filenames: false
+        always_run: true

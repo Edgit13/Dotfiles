@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edots — a MangoWM + Quickshell rice</title>
+<meta name="description" content="Edots is a Wayland desktop built on MangoWM and Quickshell, with Material 3 Expressive and Nothing designs and a palette pulled from your wallpaper.">
+<link rel="icon" href="assets/img/icon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt=""><span>Edots</span></a>
+    <nav class="nav">
+      <a href="index.html" aria-current="page">Overview</a>
+      <a href="install.html">Install</a>
+      <a href="keybinds.html">Keybinds</a>
+      <a href="themes.html">Themes</a>
+      <a href="plugins.html">Plugins</a>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="hero wrap">
+    <span class="eyebrow"><span class="dot"></span> Nook · MangoWM + Quickshell</span>
+    <h1>EDOTS<span class="grad">.</span></h1>
+    <p class="lede">
+      A Wayland desktop that speaks <strong>Material 3 Expressive</strong> and <strong>Nothing</strong>.
+      One shell, three bar styles, a palette pulled from your wallpaper — and no stitching
+      waybar, mako, fuzzel and swaylock together.
+    </p>
+    <div class="actions">
+      <a class="btn btn-primary" href="install.html">Install</a>
+      <a class="btn" href="https://github.com/Edgit13/Dotfiles">Source</a>
+      <a class="btn" href="keybinds.html">Keybinds</a>
+    </div>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <div class="ticker-group">
+          <span>Material 3</span><i></i><span>Nothing</span><i></i><span>Morph</span><i></i>
+          <span>Islands</span><i></i><span>Tray</span><i></i><span>Face ID</span><i></i>
+          <span>OCR</span><i></i><span>Lens</span><i></i><span>Night light</span><i></i>
+          <span>Updates</span><i></i><span>Plugins</span><i></i><span>Per-app audio</span><i></i>
+          <span>Lock screen</span><i></i><span>Dashboard</span><i></i>
+        </div>
+        <div class="ticker-group">
+          <span>Material 3</span><i></i><span>Nothing</span><i></i><span>Morph</span><i></i>
+          <span>Islands</span><i></i><span>Tray</span><i></i><span>Face ID</span><i></i>
+          <span>OCR</span><i></i><span>Lens</span><i></i><span>Night light</span><i></i>
+          <span>Updates</span><i></i><span>Plugins</span><i></i><span>Per-app audio</span><i></i>
+          <span>Lock screen</span><i></i><span>Dashboard</span><i></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure>
+        <img src="assets/img/banner.png" alt="Edots desktop banner">
+        <figcaption>Edots — MangoWM session, bar, dashboard and surfaces</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Two design languages, one palette</h2>
+      <p class="sub">
+        Switch the design in Settings or with <code>edots theme toggleDesign</code>. Both designs
+        run the same widgets, the same keybinds and the same colour pipeline; only the shapes,
+        type and accent behaviour change.
+      </p>
+
+      <div class="compare">
+        <div class="head m">Material 3 Expressive</div>
+        <div class="head n">Nothing</div>
+        <div>Tonal surfaces, large rounded shapes, dynamic colour from the wallpaper. Closest to a modern Android desktop.</div>
+        <div>Monochrome panels, dot-matrix accents, hairline borders and exactly one red accent. Closest to a piece of hardware.</div>
+        <div>Material Symbols Rounded, Google Sans Flex.</div>
+        <div>Dot-matrix numerals and labels, SF Mono / JetBrains Mono.</div>
+      </div>
+
+      <div class="shots" style="margin-top:18px">
+        <figure>
+          <img src="assets/img/bar-material.png" alt="Edots bar in Material 3">
+          <figcaption>Material 3 Expressive — tonal pills, wallpaper colours</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/img/bar-nothing.png" alt="Edots bar in Nothing style">
+          <figcaption>Nothing — monochrome, dot-matrix, one red accent</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/img/bar-islands.png" alt="Edots islands bar">
+          <figcaption>Islands — three floating capsules: control · workspaces + clock · tray</figcaption>
+        </figure>
+      </div>
+
+      <div class="pill-row">
+        <span class="pill">full strip</span>
+        <span class="pill">pill</span>
+        <span class="pill">islands</span>
+        <span class="pill">top · bottom · left · right</span>
+        <span class="pill">per monitor</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What is inside</h2>
+      <p class="sub">Everything is one Quickshell process. Surfaces grow out of the bar in morph mode,
+        or open as floating cards in window mode.</p>
+
+      <div class="grid">
+        <div class="card">
+          <span class="tag lav">Bar</span>
+          <h4>Modular bar</h4>
+          <p>Launcher, window, media, resources, workspaces, clock, volume, network, battery,
+             notifications, tray and power. Modules toggle from Settings.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Surfaces</span>
+          <h4>Floating cards</h4>
+          <p>Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi,
+             Bluetooth, media, power, updates, diagnostics and keybinds.</p>
+        </div>
+        <div class="card">
+          <span class="tag red">Lock</span>
+          <h4>Lock screen</h4>
+          <p>Configurable clock, widgets, wallpaper effects and PAM unlock, plus optional
+             on-device Face ID. Developer hotkeys stay whitelisted and never unlock.</p>
+        </div>
+        <div class="card">
+          <span class="tag lav">Notify</span>
+          <h4>Notification center</h4>
+          <p>Grouping by app, snooze, history limit, urgency accents, inline actions and
+             configurable density. Do Not Disturb from the bar or CLI.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Dashboard</span>
+          <h4>One glance</h4>
+          <p>Overview, media, performance, workspaces and planner tabs, with calendar,
+             weather, timer, todo and brightness cards.</p>
+        </div>
+        <div class="card">
+          <span class="tag lav">Audio</span>
+          <h4>Per-app audio</h4>
+          <p>Every playing app with its own volume, mute and output. Pin an app to a sink and
+             Edots remembers it. EQ, presets and mic processing live in Audio Studio.</p>
+        </div>
+        <div class="card">
+          <span class="tag red">Tray</span>
+          <h4>StatusNotifier host</h4>
+          <p>Quickshell owns the tray, so nm-applet, Steam, blueman and Viber register directly.
+             Menus are Material 3, with drill-down submenus and app-coloured icons.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Capture</span>
+          <h4>Screen tools</h4>
+          <p>Screenshot, region OCR, Google Lens and recording from one overlay.
+             Text goes straight to the clipboard.</p>
+        </div>
+        <div class="card">
+          <span class="tag lav">System</span>
+          <h4>Night light &amp; updates</h4>
+          <p>gammastep-backed night light with manual or scheduled temperature, and an update
+             centre for pacman, AUR and Flatpak that never installs on its own.</p>
+        </div>
+        <div class="card">
+          <span class="tag red">Plugins</span>
+          <h4>Small and scriptable</h4>
+          <p>A plugin is a folder with a manifest and a QML file. It can add a surface, a bar
+             module, or both. See <a href="plugins.html">Plugins</a>.</p>
+        </div>
+        <div class="card">
+          <span class="tag">CLI</span>
+          <h4><code>edots</code></h4>
+          <p>Every surface, theme, session action, Face ID step and diagnostic is one command.
+             Raw Quickshell IPC is one command too.</p>
+        </div>
+        <div class="card">
+          <span class="tag lav">Theme</span>
+          <h4>Wallpaper colours</h4>
+          <p>Palette generated from the current wallpaper and synced to GTK, kitty, ghostty,
+             Firefox, rofi and KDE. Dot, fade and scan transitions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Look closer</h2>
+      <figure>
+        <img src="assets/img/settings.png" alt="Edots settings">
+        <figcaption>Settings — every option is a schema field, searchable in UK and EN</figcaption>
+      </figure>
+      <div class="split" style="margin-top:16px">
+        <figure>
+          <img src="assets/img/launcher.png" alt="Edots launcher">
+          <figcaption>Launcher — apps, files, emoji, calculator and shell commands</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/img/notifications.png" alt="Edots notification center">
+          <figcaption>Notification center — grouping, DND, criticals always get through</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Start here</h2>
+      <div class="grid">
+        <a class="card" href="install.html"><h4>Install →</h4><p>Requirements, the installer, health check and updates.</p></a>
+        <a class="card" href="keybinds.html"><h4>Keybinds →</h4><p>Every surface, window action and launcher prefix.</p></a>
+        <a class="card" href="themes.html"><h4>Themes →</h4><p>Material vs Nothing, transitions and palette sync.</p></a>
+        <a class="card" href="plugins.html"><h4>Plugins →</h4><p>Manifest format, folders and CLI.</p></a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Edots — a MangoWM + Quickshell rice by Nook.</span>
+    <span>MIT licensed.</span>
+    <nav>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+      <a href="https://github.com/Edgit13/Dotfiles/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://quickshell.org">Quickshell</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+
+</body>
+</html>

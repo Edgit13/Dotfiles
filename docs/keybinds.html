@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keybinds — Edots</title>
+<meta name="description" content="Every Edots keybind, launcher prefix and IPC command.">
+<link rel="icon" href="assets/img/icon.png">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/img/logo.svg" alt=""><span>Edots</span></a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="install.html">Install</a>
+      <a href="keybinds.html" aria-current="page">Keybinds</a>
+      <a href="themes.html">Themes</a>
+      <a href="plugins.html">Plugins</a>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <div class="hero wrap" style="padding-bottom:24px">
+    <span class="eyebrow"><span class="dot"></span> Keybinds</span>
+    <h1 style="font-size:clamp(38px,6vw,64px)">Hands on keys</h1>
+    <p class="lede">Defined in <code>mango/binds.conf</code>. Press <kbd>Super</kbd>+<kbd>/</kbd>
+      for the live cheat-sheet — it is generated from the same file.</p>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <h2>Surfaces</h2>
+      <table>
+        <tr><th>Bind</th><th>Action</th></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Space</kbd></td><td>Launcher</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>C</kbd></td><td>Wallpapers</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>V</kbd></td><td>Clipboard history</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>W</kbd></td><td>Wi-Fi</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>X</kbd></td><td>Mixer</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd></td><td>Audio studio — EQ, presets, mic noise reduction</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>P</kbd></td><td>Media player</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>O</kbd></td><td>Power menu</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>A</kbd></td><td>Settings</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>D</kbd></td><td>Dashboard</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>T</kbd></td><td>Task manager</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>N</kbd></td><td>Notification center</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> / <kbd>Ctrl</kbd>+<kbd>N</kbd></td><td>Clear notifications / Do Not Disturb</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>U</kbd> or <kbd>Print</kbd></td><td>Screen capture — screenshot, OCR, Lens, recording</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>L</kbd></td><td>Lock screen</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>F3</kbd></td><td>Suspend — lock, then suspend</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Esc</kbd></td><td>Close every open surface</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd></td><td>Restart the bar shell</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Windows, tags and apps</h2>
+      <table>
+        <tr><th>Bind</th><th>Action</th></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>1</kbd>…<kbd>9</kbd></td><td>Switch tag</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd></td><td>Move window to tag</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></td><td>Focus window</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Tab</kbd></td><td>Switch layout</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>F</kbd></td><td>Toggle floating</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>S</kbd> / <kbd>Shift</kbd>+<kbd>S</kbd></td><td>Scratchpad / minimize</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>J</kbd> or <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Return</kbd></td><td>Toggle split direction</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>←</kbd><kbd>→</kbd></td><td>Move window to monitor</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Super</kbd>+<kbd>←</kbd><kbd>→</kbd></td><td>Move tag to monitor</td></tr>
+        <tr><td><kbd>Super</kbd>+scroll</td><td>Previous / next used tag</td></tr>
+        <tr><td><kbd>Super</kbd>+drag</td><td>Move / resize window</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Return</kbd></td><td>Terminal</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>B</kbd> / <kbd>Super</kbd>+<kbd>E</kbd></td><td>Firefox / Files</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Q</kbd></td><td>Close window</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>R</kbd></td><td>Reload MangoWM config</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd></td><td>Toggle dock</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd></td><td>Display centre</td></tr>
+        <tr><td><kbd>Super</kbd>+<kbd>F1</kbd></td><td>Game mode</td></tr>
+      </table>
+      <p class="sub">Media, brightness and playback keys work while the screen is locked.
+        Surfaces opened from a keybind appear on the focused monitor; clicking a bar module opens
+        it on that bar's monitor.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Launcher prefixes</h2>
+      <div class="prose">
+        <table>
+          <tr><th>Type</th><th>Result</th></tr>
+          <tr><td><code>firefox</code></td><td>Applications</td></tr>
+          <tr><td><code>2+2</code> or <code>=2+2</code></td><td>Calculator</td></tr>
+          <tr><td><code>:fire</code></td><td>Emoji search</td></tr>
+          <tr><td><code>/report</code></td><td>File search — <code>fd</code> when available, <code>find</code> otherwise</td></tr>
+          <tr><td><code>&gt;htop</code></td><td>Shell command</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>CLI and IPC</h2>
+      <div class="prose">
+        <p>The <code>edots</code> command wraps every surface and action:</p>
+        <pre><code>edots launcher           # also: wall, clipboard, wifi, mixer, audio, media, power, binds
+edots settings
+edots dashboard
+edots tasks
+edots screenshot         # "stop" ends a recording
+edots ocr                # select a region and copy its text
+edots lens               # select a region and search with Google Lens
+edots notifications      # open|toggle|close|clear|read|clear-read|dnd
+edots notifications mute ghostty
+edots app-audio          # ui|sinks|route|forget|apply
+edots plugin             # open|enable|disable|toggle|reload|folder|path
+edots nightlight         # on|off|toggle|temp N|status
+edots updates            # open|refresh|update
+edots theme toggleDesign # Material &lt;-&gt; Nothing
+edots faceid             # status|setup|enroll|test|remove
+edots reload
+edots doctor</code></pre>
+
+        <p>For raw Quickshell IPC:</p>
+        <pre><code>edots ipc pill toggleLauncher
+qs -p ~/.config/quickshell/bar/shell.qml ipc call dashboard toggle</code></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Edots — a MangoWM + Quickshell rice by Nook.</span>
+    <span>MIT licensed.</span>
+    <nav>
+      <a href="https://github.com/Edgit13/Dotfiles">GitHub</a>
+      <a href="https://github.com/Edgit13/Dotfiles/blob/master/CHANGELOG.md">Changelog</a>
+      <a href="https://quickshell.org">Quickshell</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/app.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Normalise text, never mangle binaries.
+* text=auto eol=lf
+
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.svg   text
+*.mp4   binary
+*.wav   binary
+*.tar   binary
+*.gz    binary
+*.xz    binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+
+# Diffs people actually read
+*.qml   diff=qml
+*.md    diff=markdown
+CHANGELOG.md merge=union

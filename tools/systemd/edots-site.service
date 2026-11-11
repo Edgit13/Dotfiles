@@ -1,0 +1,30 @@
+[Unit]
+Description=Edots docs — static site on :8091
+Documentation=https://github.com/Edgit13/Dotfiles
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=eduard
+Group=eduard
+WorkingDirectory=/home/eduard/edots-site
+ExecStart=/usr/bin/python3 -m http.server 8091 --bind 0.0.0.0 --directory /home/eduard/edots-site
+Restart=always
+RestartSec=3
+
+# The service only needs to read one directory and speak TCP.
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target
