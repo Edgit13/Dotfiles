@@ -21,8 +21,10 @@ VERSION="${1:-}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "version must be X.Y.Z"
 TAG="v$VERSION"
 
-if [ -n "$(git status --porcelain)" ]; then
-    die "the working tree is dirty — commit or stash first"
+# Only tracked changes matter: a tag points at a commit, so untracked files
+# (scratch screenshots, local notes) would not be part of the release anyway.
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    die "the working tree has uncommitted changes — commit or stash first"
 fi
 
 git rev-parse -q --verify "refs/tags/$TAG" >/dev/null && die "tag $TAG already exists"
