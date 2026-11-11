@@ -20,8 +20,8 @@
     "size": 0.75,
     "duration": 2.4000000000000004
   },
-  "style": "pill",
-  "openMode": "morph",
+  "style": "full",
+  "openMode": "window",
   "modules": {
     "mixer": true,
     "tray": true
@@ -32,5 +32,5 @@
   "layout": {
     "active": "dwindle"
   },
-  "pillHover": false
+  "pillHover": true
 }

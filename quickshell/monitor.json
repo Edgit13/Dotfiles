@@ -2,7 +2,7 @@
   "cpuLimit": 210,
   "memLimit": 7424,
   "shellMemLimit": 1024,
-  "whitelist": "Main, java, REPO.exe",
+  "whitelist": "Main, java, REPO.exe, steam, fossilize_repla",
   "scope": "system",
   "shellCpuLimit": 80,
   "enabled": true
