@@ -8,6 +8,12 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ## [Unreleased]
 
+### Changed
+
+- Refreshed the screenshots for the current shell: the bar in all three styles
+  (full, pill, islands), the launcher, Settings and the wallpaper picker.
+  The docs site uses the same images.
+
 ## [1.0.0] — 2026-11-11
 
 First versioned snapshot of the rice. Everything below was already in the tree;
