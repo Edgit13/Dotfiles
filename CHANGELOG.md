@@ -8,8 +8,22 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ## [Unreleased]
 
+### Added
+
+- The docs site is published at <https://ekhub.pp.ua> through a Cloudflare
+  Tunnel (`tools/cloudflared/config.yml`). No inbound ports are open, the home
+  IP is not exposed and TLS terminates at Cloudflare.
+- `student.ekhub.pp.ua` serves StudentP and `cloud.ekhub.pp.ua` serves
+  NextCloud through the same tunnel, so the `3131` and `8081` port forwards are
+  no longer needed. StudentP now listens on `127.0.0.1:3131` behind nginx
+  (`tools/nginx/studentp.conf`) with login rate limiting.
+
 ### Changed
 
+- The docs site is now served by nginx from `tools/nginx/edots-site.conf`
+  (static, no directory listing, security headers, asset caching). The
+  `python3 -m http.server` unit is loopback-only on `127.0.0.1:8091` and used
+  for local previews.
 - Refreshed the screenshots for the current shell: the bar in all three styles
   (full, pill, islands), the launcher, Settings and the wallpaper picker.
   The docs site uses the same images.

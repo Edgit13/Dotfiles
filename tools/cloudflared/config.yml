@@ -1,0 +1,31 @@
+# Cloudflare Tunnel — public access to the docs site without open ports.
+#
+# Install on the server (the tunnel was created once with
+# `cloudflared tunnel login` + `cloudflared tunnel create edots`):
+#
+#   sudo mkdir -p /etc/cloudflared
+#   sudo install -m 644 tools/cloudflared/config.yml /etc/cloudflared/
+#   sudo cloudflared service install
+#   sudo systemctl enable --now cloudflared
+#
+# DNS: `cloudflared tunnel route dns edots ekhub.pp.ua` creates the proxied
+# CNAME to <tunnel-id>.cfargotunnel.com.
+#
+# The tunnel connects outbound to Cloudflare, so the router needs no port
+# forwarding and the home IP is never published. TLS terminates at Cloudflare.
+# Tunnel credentials (~/.cloudflared/<id>.json) are machine-specific and are
+# never committed.
+
+tunnel: 334911b3-2dd8-41f0-bfe3-e1fcc72df3d4
+credentials-file: /home/eduard/.cloudflared/334911b3-2dd8-41f0-bfe3-e1fcc72df3d4.json
+
+ingress:
+  - hostname: ekhub.pp.ua
+    service: http://localhost:80
+  - hostname: student.ekhub.pp.ua
+    service: http://localhost:8082
+  - hostname: cloud.ekhub.pp.ua
+    service: https://192.168.1.109:443
+    originRequest:
+      noTLSVerify: true
+  - service: http_status:404

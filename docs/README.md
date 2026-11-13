@@ -46,23 +46,54 @@ short, transform/opacity only, no layout shift.
 
 ## Hosting
 
-The site is deployed with rsync to a small Ubuntu box and served by a systemd
-unit on **:8091**:
+The site is deployed with rsync to a small Ubuntu box:
 
 ```sh
 make deploy                     # rsync docs/ to the server
 ```
 
-The unit lives in `tools/systemd/edots-site.service` and runs
-`python3 -m http.server` as the `eduard` user, with `ProtectSystem=strict`,
-`ProtectHome=read-only` and no capabilities. Install it once on the server:
+nginx is the public front end and serves `/home/eduard/edots-site` directly, so a
+deploy needs no restart. The site config is
+`tools/nginx/edots-site.conf`; install it once:
 
 ```sh
-sudo install -m 644 tools/systemd/edots-site.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now edots-site
+sudo cp tools/nginx/edots-site.conf /etc/nginx/sites-available/edots
+sudo ln -s /etc/nginx/sites-available/edots /etc/nginx/sites-enabled/edots
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo setfacl -m u:www-data:x /home/eduard   # nginx must traverse the home dir
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Point a reverse proxy or tunnel at `http://127.0.0.1:8091`. Override the target
-with `EDOTS_DOCS_HOST=user@host` and `EDOTS_DOCS_DIR=/path`. No credentials are
-stored in the repository — use SSH keys.
+It disables directory listing, hides dotfiles and the repo README, adds
+`nosniff`/frame/referrer headers and caches assets for a week.
+
+Public access goes through a **Cloudflare Tunnel**, so the box opens no inbound
+ports and the home IP stays hidden; TLS terminates at Cloudflare. The tunnel
+config is `tools/cloudflared/config.yml`:
+
+```sh
+sudo mkdir -p /etc/cloudflared
+sudo install -m 644 tools/cloudflared/config.yml /etc/cloudflared/
+sudo cloudflared service install
+```
+
+Tunnel credentials (`~/.cloudflared/*.json`) live outside the repository. Each
+hostname is a proxied CNAME to `<tunnel-id>.cfargotunnel.com`, created with
+`cloudflared tunnel route dns edots <host>`:
+
+| Hostname | Origin |
+|---|---|
+| `ekhub.pp.ua` | nginx, static `docs/` on `127.0.0.1:80` |
+| `student.ekhub.pp.ua` | nginx on `127.0.0.1:8082` → StudentP on `127.0.0.1:3131` |
+| `cloud.ekhub.pp.ua` | NextCloud on `https://192.168.1.109:443` |
+
+`tools/nginx/studentp.conf` keeps the app off the public interfaces and limits
+`/auth/login` attempts; the zone lives in `studentp-ratelimit.conf` (both go to
+the server's `/etc/nginx`).
+
+`tools/systemd/edots-site.service` is a local-only fallback: it runs
+`python3 -m http.server` on `127.0.0.1:8091` for previews. It is not exposed.
+
+Override the deploy target with `EDOTS_DOCS_HOST=user@host` and
+`EDOTS_DOCS_DIR=/path`. No credentials are stored in the repository — use SSH
+keys.

@@ -6,8 +6,9 @@
 #   EDOTS_DOCS_HOST=user@host EDOTS_DOCS_DIR=/srv/edots ./tools/deploy-docs.sh
 #
 # rsync only. No credentials are stored here: ssh either uses your key or asks
-# for the password interactively. The service on the other side is a plain
-# `python3 -m http.server` unit — see tools/systemd/edots-site.service.
+# for the password interactively. The server publishes the directory with nginx
+# (tools/nginx/edots-site.conf) and Cloudflare Tunnel (tools/cloudflared/), so a
+# deploy needs no restart and no open inbound port.
 #
 set -euo pipefail
 
@@ -26,4 +27,4 @@ rsync -az --delete --itemize-changes \
     -e "ssh -o ConnectTimeout=8" \
     "$REPO_DIR/docs/" "$HOST:$DIR/"
 
-info "done — http://${HOST#*@}:8091/"
+info "done — https://ekhub.pp.ua/"
