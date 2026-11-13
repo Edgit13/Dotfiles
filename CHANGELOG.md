@@ -8,6 +8,8 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-11-13
+
 ### Added
 
 - The docs site is published at <https://ekhub.pp.ua> through a Cloudflare
