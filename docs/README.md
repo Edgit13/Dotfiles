@@ -35,6 +35,12 @@ python3 -m http.server -d docs 8080
   needs into `assets/img/` (Pages publishes `docs/` only).
 - Palette: black `#0b0a09`, ink `#f4f1ea`, red `#e01b24`, purple `#6b4eba`,
   lavender `#cdbff0`.
+- Each page carries canonical, Open Graph and Twitter tags pointing at
+  `https://ekhub.pp.ua`. `assets/img/og.png` is a 1200x630 crop of `banner.png`
+  — regenerate it when the banner changes. `<meta name="theme-color">` matches
+  the page background.
+- `404.html`, `robots.txt` and `sitemap.xml` are served as-is; nginx maps the
+  404 with `error_page`, so add new pages to the sitemap by hand.
 
 ## Motion
 

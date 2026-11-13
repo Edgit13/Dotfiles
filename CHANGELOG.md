@@ -8,6 +8,12 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ## [Unreleased]
 
+### Added
+
+- Docs site: Nook-styled `404.html` (served with a real 404 status by nginx),
+  `robots.txt`, `sitemap.xml`, and canonical/Open Graph/Twitter metadata plus a
+  1200x630 `og.png` on every page, so shared links get a preview card.
+
 ## [1.1.0] — 2026-11-13
 
 ### Added
