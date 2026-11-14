@@ -24,7 +24,7 @@ PanelWindow {
     function close(): void  { win.visible = false }
     function toggle(): void { win.visible ? win.close() : win.open() }
 
-    onVisibleChanged: if (visible) card.forceActiveFocus()
+    onVisibleChanged: if (visible) { Settings.refresh(); card.forceActiveFocus() }
 
     // scrim
     Rectangle {

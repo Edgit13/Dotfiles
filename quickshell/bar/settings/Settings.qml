@@ -14,29 +14,32 @@ Singleton {
     property bool loaded: false
     signal changed(string cat, string key, var value)
 
-    FileView { path: root.base + "general.json";    watchChanges: true; printErrors: false
+    // blockLoading lets _disk() block on a read when it re-reads a file just
+    // before writing it, so a manual edit can never be overwritten by state
+    // this singleton loaded earlier.
+    FileView { id: rGeneral;    path: root.base + "general.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("general.json", text()) }
-    FileView { path: root.base + "theme.json";      watchChanges: true; printErrors: false
+    FileView { id: rTheme;      path: root.base + "theme.json";      watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("theme.json", text()) }
-    FileView { path: root.base + "bar.json";        watchChanges: true; printErrors: false
+    FileView { id: rBar;        path: root.base + "bar.json";        watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("bar.json", text()) }
-    FileView { path: root.base + "clock.json";      watchChanges: true; printErrors: false
+    FileView { id: rClock;      path: root.base + "clock.json";      watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("clock.json", text()) }
-    FileView { path: root.base + "monitor.json";    watchChanges: true; printErrors: false
+    FileView { id: rMonitor;    path: root.base + "monitor.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("monitor.json", text()) }
-    FileView { path: root.base + "widgets.json";    watchChanges: true; printErrors: false
+    FileView { id: rWidgets;    path: root.base + "widgets.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("widgets.json", text()) }
-    FileView { path: root.base + "lockscreen.json"; watchChanges: true; printErrors: false
+    FileView { id: rLock;       path: root.base + "lockscreen.json"; watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("lockscreen.json", text()) }
-    FileView { path: root.base + "session.json";    watchChanges: true; printErrors: false
+    FileView { id: rSession;    path: root.base + "session.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("session.json", text()) }
-    FileView { path: root.base + "capture.json";    watchChanges: true; printErrors: false
+    FileView { id: rCapture;    path: root.base + "capture.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("capture.json", text()) }
-    FileView { path: root.base + "nightlight.json"; watchChanges: true; printErrors: false
+    FileView { id: rNight;      path: root.base + "nightlight.json"; watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("nightlight.json", text()) }
-    FileView { path: root.base + "updates.json";    watchChanges: true; printErrors: false
+    FileView { id: rUpdates;    path: root.base + "updates.json";    watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("updates.json", text()) }
-    FileView { path: root.base + "colors.json";     watchChanges: true; printErrors: false
+    FileView { id: rColors;     path: root.base + "colors.json";     watchChanges: true; printErrors: false; blockLoading: true
                onFileChanged: reload(); onTextChanged: root._onFile("colors.json", text()) }
 
     FileView { id: wGeneral; path: root.base + "general.json";   atomicWrites: true; printErrors: false }
@@ -70,6 +73,64 @@ Singleton {
         return null
     }
 
+    function _reader(file) {
+        switch (file) {
+        case "general.json":    return rGeneral
+        case "theme.json":      return rTheme
+        case "bar.json":        return rBar
+        case "clock.json":      return rClock
+        case "monitor.json":    return rMonitor
+        case "widgets.json":    return rWidgets
+        case "lockscreen.json": return rLock
+        case "session.json":    return rSession
+        case "capture.json":    return rCapture
+        case "nightlight.json": return rNight
+        case "updates.json":    return rUpdates
+        case "colors.json":     return rColors
+        }
+        return null
+    }
+
+    // Файли, які читає Settings (без дублів), — для refresh().
+    function _files() {
+        var out = []
+        for (var cat in Schema.schema) {
+            var f = Schema.schema[cat].file
+            if (f && out.indexOf(f) < 0) out.push(f)
+        }
+        return out
+    }
+
+    // Перечитує всі файли з диска. Викликається при відкритті вікна: якщо
+    // watcher пропустив зміну (редактор зберіг файл атомарно, або запис
+    // прийшов частинами), UI однаково покаже актуальні значення.
+    function refresh() {
+        var files = _files()
+        for (var i = 0; i < files.length; i++) {
+            var r = _reader(files[i])
+            if (r) r.reload()
+        }
+    }
+
+    // Свіжий вміст файлу з диска. Повертає {} для порожнього файлу і null,
+    // якщо JSON не парситься: у такому разі писати не можна, інакше затерли б
+    // те, що користувач щойно правив вручну.
+    function _disk(file) {
+        var r = _reader(file)
+        if (!r) return Object.assign({}, root._raw[file] || {})
+        r.reload()
+        r.waitForJob()
+        var text = r.text()
+        if (!text || text.trim().length === 0) return {}
+        try {
+            var parsed = JSON.parse(text)
+            return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {}
+        } catch (e) {
+            console.warn("[Settings] not writing " + file + ", invalid JSON: " + e)
+            return null
+        }
+    }
+
     function _getPath(obj, path) {
         var parts = path.split(".")
         var cur = obj
@@ -93,7 +154,7 @@ Singleton {
         var parsed = {}
         if (text && text.trim().length > 0) {
             try { parsed = JSON.parse(text) }
-            catch (e) { console.warn("[Settings] parse", name, e); return }
+            catch (e) { console.warn("[Settings] parse", name, e); _retryLater(name); return }
         }
         var raw = Object.assign({}, root._raw)
         raw[name] = parsed
@@ -206,9 +267,12 @@ Singleton {
         var file = s.file
         var path = s.fields[key].path || key
 
-        var raw = Object.assign({}, root._raw)
-        var fileData = Object.assign({}, raw[file] || {})
+        // Берімо файл з диска, а не _raw: поки вікно було відкрите, користувач
+        // міг правити його вручну, і тоді запис затер би ці зміни.
+        var fileData = _disk(file)
+        if (fileData === null) return false
         _setPath(fileData, path, v)
+        var raw = Object.assign({}, root._raw)
         raw[file] = fileData
         root._raw = raw
 
@@ -218,7 +282,7 @@ Singleton {
         root.data = merged
 
         var w = _writer(file)
-        if (w) w.setText(JSON.stringify(fileData, null, 2))
+        if (w) { w.setText(JSON.stringify(fileData, null, 2)); w.waitForJob() }
         changed(cat, key, v)
         return true
     }
@@ -228,8 +292,8 @@ Singleton {
         var s = Schema.schema[cat]
         if (!s || !s.fields) return false
         var file = s.file
-        var raw = Object.assign({}, root._raw)
-        var fileData = Object.assign({}, raw[file] || {})
+        var fileData = _disk(file)
+        if (fileData === null) return false
         var catObj = Object.assign({}, (root.data[cat] || {}))
         var applied = []
         for (var key in values) {
@@ -240,13 +304,14 @@ Singleton {
             catObj[key] = v
             applied.push([key, v])
         }
+        var raw = Object.assign({}, root._raw)
         raw[file] = fileData
         root._raw = raw
         var merged = Object.assign({}, root.data)
         merged[cat] = catObj
         root.data = merged
         var w = _writer(file)
-        if (w) w.setText(JSON.stringify(fileData, null, 2))
+        if (w) { w.setText(JSON.stringify(fileData, null, 2)); w.waitForJob() }
         for (var i = 0; i < applied.length; i++) changed(cat, applied[i][0], applied[i][1])
         return true
     }
@@ -255,15 +320,39 @@ Singleton {
     function resetCategory(cat) {
         var cs = Schema.schema[cat]
         if (!cs || !cs.fields) return false
-        for (var k in cs.fields) set(cat, k, cs.fields[k].default)
-        return true
+        // Один запис на файл замість одного на кожен ключ.
+        var values = {}
+        for (var k in cs.fields) values[k] = cs.fields[k].default
+        return setMany(cat, values)
     }
     function resetAll() {
         for (var cat in Schema.schema) resetCategory(cat)
         return true
     }
 
-    Component.onCompleted: {
-        wTheme.reload(); wBar.reload(); wClock.reload()
+    // Якщо файл прийшов частинами (редактор спершу обрізає його, бекап
+    // копіюється не атомарно), перший текст може бути невалідним JSON.
+    // Один повторний reload через коротку паузу зазвичай ловить уже цілий файл.
+    property var _retry: ({})
+    function _retryLater(file) {
+        var m = Object.assign({}, root._retry)
+        m[file] = true
+        root._retry = m
+        retryTimer.restart()
     }
+    Timer {
+        id: retryTimer
+        interval: 200
+        repeat: false
+        onTriggered: {
+            var pending = root._retry
+            root._retry = ({})
+            for (var f in pending) {
+                var r = root._reader(f)
+                if (r) r.reload()
+            }
+        }
+    }
+
+    Component.onCompleted: root.refresh()
 }
