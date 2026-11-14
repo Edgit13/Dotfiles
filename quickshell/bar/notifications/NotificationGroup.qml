@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import "root:/theme"
 import "root:/services"
+import "root:/settings"
 import "root:/settings/material"
 import Quickshell
 import QtQuick
@@ -82,6 +83,22 @@ ColumnLayout {
             width: Theme.components.dp(30); height: width
             opacity: group.muted ? 1 : 0.6
             onClicked: NotificationService.toggleMuteApp(group.gkey)
+        }
+        MaterialIconButton {
+            icon: "block"
+            width: Theme.components.dp(30); height: width
+            selected: NotificationService.hasRule("blocked", group.gkey)
+            opacity: selected ? 1 : 0.6
+            tooltip: selected ? Lang.t("ui.notif.unblockApp") : Lang.t("ui.notif.blockApp")
+            onClicked: NotificationService.toggleBlockApp(group.gkey)
+        }
+        MaterialIconButton {
+            icon: "star"
+            width: Theme.components.dp(30); height: width
+            selected: NotificationService.hasRule("priority", group.gkey)
+            opacity: selected ? 1 : 0.6
+            tooltip: selected ? Lang.t("ui.notif.unpriorityApp") : Lang.t("ui.notif.priorityApp")
+            onClicked: NotificationService.toggleRule("priority", group.gkey)
         }
         MaterialIconButton {
             visible: group.gItems.length > 1

@@ -57,7 +57,7 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 | 🪄 **Surfaces** | Launcher, wallpapers, clipboard, mixer, audio studio, display centre, Wi-Fi, media, power menu, updates, keybind cheat-sheet and resources open as floating cards next to the bar — on the monitor you are using. |
 | 🔎 **Advanced launcher** | One field for everything: apps, files (`/report`), a calculator (`2+2`), emoji (`:fire`) and shell commands (`>htop`). <kbd>Enter</kbd> opens or copies, <kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs a command in the terminal. |
 | 📊 **Dashboard** | Overview, Media, Performance, Workspaces and Planner tabs. Weather (Open-Meteo, no API key), CPU / RAM / disk, brightness, volume, calendar with timed tasks. |
-| 🔔 **Own notification daemon** | Popups and a notification center with unread state, pin, snooze, per-app mute, search, All / Unread / Pinned filters, copy text, clear-read, history limit, card density/icon size and Do Not Disturb. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
+| 🔔 **Own notification daemon** | Popups and a notification center with unread state, pin, snooze, per-app mute, search, All / Unread / Pinned filters, copy text, clear-read, history limit, card density/icon size and Do Not Disturb. Block an app entirely or mark it priority (bypasses DND) from its group header; the same alerts can appear on the lock screen as a counter or a compact list with the text hidden by default. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
 | 🔒 **Lock screen** | Quickshell + PAM lock screen: ken burns, parallax, floating shapes, power buttons. Lock-then-suspend through logind. Optional **Face ID** unlocks from the webcam; the password always works. |
 | 🌙 **Idle & session** | Lock, display-off and suspend timers in *Settings → System → Session*; `swayidle` is regenerated live. `edots session` shows the effective timers and exposes lock / suspend / logout / reboot / poweroff. |
 | 🔊 **OSD** | Volume and brightness overlays on the active monitor. |
@@ -279,6 +279,9 @@ edots tasks
 edots screenshot         # stop, to end a recording
 edots notifications      # open|toggle|close|clear|read|clear-read|dnd
 edots notifications mute ghostty   # mute / unmute one app
+edots notifications block ghostty  # never show or store this app
+edots notifications priority slack # bypass Do Not Disturb
+edots notifications rules          # blocked / priority patterns
 edots app-audio          # apps, volumes, saved output routes; ui|sinks|route|forget|apply
 edots app-audio ui       # open Mixer → Apps
 edots plugin             # list plugins; open|enable|disable|toggle|reload|folder|path

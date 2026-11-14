@@ -41,6 +41,7 @@ PanelWindow {
     readonly property real maxListH: Math.max(Theme.components.dp(96),
         win.maxPanelH - Theme.space.lg * 2 - headerRow.implicitHeight - searchRow.implicitHeight
         - filterRow.implicitHeight - dndRow.implicitHeight - footerRow.implicitHeight
+        - (rulesRow.visible ? rulesRow.implicitHeight + bodyCol.spacing : 0)
         - bodyCol.spacing * 6)
 
     // Розмір самої панелі (анімується ВСЕРЕДИНІ вікна)
@@ -256,6 +257,67 @@ PanelWindow {
                 Chip { key: "unread"; label: Lang.t("ui.notif.unread"); count: NotificationService.unreadCount }
                 Chip { key: "pinned"; label: Lang.t("ui.notif.pinned"); count: NotificationService.pinnedItems.length }
                 Item { Layout.fillWidth: true }
+            }
+
+            // ---- правила: заблоковані застосунки ----
+            Item {
+                id: rulesRow
+                Layout.fillWidth: true
+                implicitHeight: rulesFlow.implicitHeight
+                visible: (NotificationService.blockedApps || []).length > 0
+
+                Flow {
+                    id: rulesFlow
+                    width: parent.width
+                    spacing: Theme.space.xs
+
+                    ThemedText {
+                        text: Lang.t("ui.notif.blocked")
+                        height: Theme.components.dp(28)
+                        verticalAlignment: Text.AlignVCenter
+                        style: Theme.type.labelMedium
+                        color: Theme.color.fgSurfaceVariant
+                    }
+                    Repeater {
+                        model: NotificationService.blockedApps || []
+                        delegate: Rectangle {
+                            id: ruleChip
+                            required property var modelData
+                            readonly property bool hot: ruleMa.containsMouse
+                            width: ruleTxt.implicitWidth + ruleX.implicitWidth + Theme.space.md * 2
+                            height: Theme.components.dp(28)
+                            radius: height / 2
+                            color: hot ? Theme.color.error : Theme.color.errorContainer
+                            Behavior on color { MotionColorAnimation { role: "hover" } }
+
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: Theme.space.xs
+                                ThemedText {
+                                    id: ruleTxt
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: String(ruleChip.modelData)
+                                    style: Theme.type.labelMedium
+                                    color: ruleChip.hot ? Theme.color.fgError : Theme.color.fgErrorContainer
+                                }
+                                Text {
+                                    id: ruleX
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: "\ue5cd"
+                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                                    color: ruleChip.hot ? Theme.color.fgError : Theme.color.fgErrorContainer
+                                }
+                            }
+                            MouseArea {
+                                id: ruleMa
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: NotificationService.setRule("blocked", ruleChip.modelData, false)
+                            }
+                        }
+                    }
+                }
             }
 
             // ---- не турбувати ----

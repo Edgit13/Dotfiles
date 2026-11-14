@@ -17,6 +17,7 @@ Item {
         { id: "date",     uk: "Дата",             en: "Date",             shape: true,  toggle: "showDate" },
         { id: "weather",  uk: "Погода",           en: "Weather",          shape: true,  toggle: "weatherWidget" },
         { id: "media",    uk: "Зараз грає",       en: "Now playing",      shape: true,  toggle: "mediaWidget" },
+        { id: "notif",    uk: "Сповіщення",       en: "Notifications",    shape: true,  toggle: "" },
         { id: "user",     uk: "Профіль / Face ID", en: "Profile / Face ID", shape: true, toggle: "" },
         { id: "password", uk: "Пароль",           en: "Password",         shape: false, toggle: "" },
         { id: "power",    uk: "Живлення",         en: "Power",            shape: false, toggle: "powerButtons" }
@@ -27,8 +28,8 @@ Item {
         : ["default","circle","square","pill","oval","cookie","sunny","burst","star","clover","flower","pentagon","hexagon","blob","pill_diag"]
     readonly property var tints: ["primary", "secondary", "tertiary", "surface"]
     readonly property var defColors: nothing
-        ? ({ clock: "primary", date: "tertiary", weather: "secondary", media: "secondary", user: "primary" })
-        : ({ clock: "primary", date: "tertiary", weather: "tertiary", media: "secondary", user: "primary" })
+        ? ({ clock: "primary", date: "tertiary", weather: "secondary", media: "secondary", notif: "secondary", user: "primary" })
+        : ({ clock: "primary", date: "tertiary", weather: "tertiary", media: "secondary", notif: "surface", user: "primary" })
 
     readonly property var wmap: {
         const key = nothing ? "widgetsNothing" : "widgets"

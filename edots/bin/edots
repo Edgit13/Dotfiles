@@ -341,6 +341,9 @@ ${C_BOLD}Surfaces${C_OFF}
   edots tasks                 task manager         (Super+T)
   edots notifications [open|toggle|close|clear|read|clear-read|dnd]
   edots notifications [mute|unmute] <app>   mute/unmute one app
+  edots notifications [block|unblock] <app>  hide an app completely
+  edots notifications [priority|unpriority] <app>  show even in Do Not Disturb
+  edots notifications rules   blocked and priority patterns
   edots screenshot [stop]     screen capture       (Super+U)
   edots ocr                   select a region, copy its text
   edots lens                  select a region, search with Google Lens
@@ -442,6 +445,21 @@ case "$cmd" in
             mark-read|read-all|read|readAll) action="read" ;;
             mute)   shift || true; ipc_open notifications muteApp "${1:-}"; exit 0 ;;
             unmute) shift || true; ipc_open notifications unmuteApp "${1:-}"; exit 0 ;;
+            block)  shift || true; ipc_open notifications blockApp "${1:-}"; exit 0 ;;
+            unblock) shift || true; ipc_open notifications unblockApp "${1:-}"; exit 0 ;;
+            priority) shift || true; ipc_open notifications priorityApp "${1:-}"; exit 0 ;;
+            unpriority) shift || true; ipc_open notifications unpriorityApp "${1:-}"; exit 0 ;;
+            rules)
+                f="$HOME/.config/quickshell/bar.json"
+                [ -f "$f" ] || { echo "No notification rules."; exit 0; }
+                if command -v jq >/dev/null 2>&1; then
+                    jq -r '"blocked:  " + ((.notif.blocked // []) | join(", ")),
+                           "priority: " + ((.notif.priority // []) | join(", "))' "$f"
+                else
+                    python3 -c 'import json,sys; d=(json.load(open(sys.argv[1])).get("notif") or {}); print("blocked:  " + ", ".join(d.get("blocked") or [])); print("priority: " + ", ".join(d.get("priority") or []))' "$f"
+                fi
+                exit 0
+                ;;
         esac
         ipc_open notifications "$action"
         ;;

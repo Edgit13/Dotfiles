@@ -37,6 +37,9 @@ Singleton {
     readonly property real iconSize: Number(Settings.get("notif", "iconSize") ?? 40)
     readonly property string density: String(Settings.get("notif", "density") || "normal")
     readonly property var mutedApps: Settings.get("notif", "muted") || []
+    // правила: glob-шаблони за назвою застосунку або desktop-entry
+    readonly property var blockedApps: Settings.get("notif", "blocked") || []
+    readonly property var priorityApps: Settings.get("notif", "priority") || []
     readonly property real densePad: density === "compact" ? 10 : density === "spacious" ? 18 : 14
     readonly property real denseGap: density === "compact" ? 4 : density === "spacious" ? 10 : 7
 
@@ -69,6 +72,60 @@ Singleton {
     function toggleMuteApp(key) { isAppMuted(key) ? unmuteApp(key) : muteApp(key) }
     function appKey(it) { return it ? (it.appName || it.desktopEntry || "—") : "—" }
     function appMuted(it) { return isAppMuted(appKey(it)) }
+
+    // ---- правила сповіщень ----
+    // blocked  — не показувати й не зберігати взагалі
+    // priority — показувати навіть у режимі «Не турбувати»
+    // Шаблон: * (будь-що), ? (один символ), без урахування регістру.
+    function globMatch(pattern, text) {
+        const p = String(pattern || "").trim().toLowerCase()
+        if (p === "") return false
+        const s = String(text || "").toLowerCase()
+        let re = ""
+        for (let i = 0; i < p.length; i++) {
+            const ch = p.charAt(i)
+            if (ch === "*") re += ".*"
+            else if (ch === "?") re += "."
+            else if ("\\^$+.()|{}[]".indexOf(ch) >= 0) re += "\\" + ch
+            else re += ch
+        }
+        try { return new RegExp("^" + re + "$").test(s) } catch (e) { return false }
+    }
+    function _matchRules(rules, names) {
+        if (!rules || rules.length === 0) return false
+        for (let i = 0; i < rules.length; i++)
+            for (let j = 0; j < names.length; j++)
+                if (names[j] && globMatch(rules[i], names[j])) return true
+        return false
+    }
+    function _ruleHitRaw(rules, n) { return !!n && _matchRules(rules, [n.appName || "", n.desktopEntry || ""]) }
+    function isBlocked(it) { return !!it && _matchRules(blockedApps, [appKey(it), it.appName, it.desktopEntry]) }
+    function isPriority(it) { return !!it && _matchRules(priorityApps, [appKey(it), it.appName, it.desktopEntry]) }
+    function hasRule(kind, app) {
+        const list = (kind === "priority" ? priorityApps : blockedApps) || []
+        const a = String(app || "").toLowerCase()
+        for (let i = 0; i < list.length; i++) if (String(list[i]).toLowerCase() === a) return true
+        return false
+    }
+    function setRule(kind, app, on) {
+        const key = kind === "priority" ? "priority" : "blocked"
+        const list = ((key === "priority" ? priorityApps : blockedApps) || []).slice()
+        const a = String(app || "").trim()
+        if (a === "") return false
+        const at = list.findIndex(x => String(x).toLowerCase() === a.toLowerCase())
+        if (on && at < 0) list.push(a)
+        else if (!on && at >= 0) list.splice(at, 1)
+        else return false
+        Settings.set("notif", key, list)
+        return true
+    }
+    function toggleRule(kind, app) { return setRule(kind, app, !hasRule(kind, app)) }
+    // Блокування з UI: прибрати вже показані сповіщення цього застосунку.
+    function toggleBlockApp(app) {
+        if (!app) return
+        const now = !hasRule("blocked", app)
+        if (setRule("blocked", app, now) && now) clearApp(app)
+    }
 
     // ---- пошук / фільтри ----
     function filteredItems(filter, query) {
@@ -197,10 +254,13 @@ Singleton {
     }
 
     function _add(n) {
+        // заблоковані правилом сповіщення не потрапляють ані в історію, ані в попапи
+        if (_ruleHitRaw(blockedApps, n)) { n.tracked = false; return }
         n.tracked = true
         const it = _wrap(n)
         const muted = root.appMuted(it)
-        const allowed = masterPopups && !centerOpen && (!dnd || it.urgency === 2) && (!muted || it.urgency === 2)
+        const priority = _ruleHitRaw(priorityApps, n)
+        const allowed = masterPopups && !centerOpen && (!dnd || it.urgency === 2 || priority) && (!muted || it.urgency === 2)
         if (allowed) { popupMonitor = _focusedMonitor() || _fallbackMonitor(); it.arm(_timeoutFor(it)) }
         else if (it.transient_) { it.close(); it.destroy(); return }
         let arr = [it].concat(items)
@@ -219,7 +279,7 @@ Singleton {
 
     function _rearm(it) {
         if (items.indexOf(it) < 0) return
-        if (masterPopups && !centerOpen && (!dnd || it.urgency === 2) && (!appMuted(it) || it.urgency === 2)) {
+        if (masterPopups && !centerOpen && (!dnd || it.urgency === 2 || isPriority(it)) && (!appMuted(it) || it.urgency === 2)) {
             popupMonitor = _focusedMonitor() || _fallbackMonitor()
             it.arm(_timeoutFor(it))
         }
@@ -257,7 +317,10 @@ Singleton {
     Component.onCompleted: {
         const tracked = server.trackedNotifications.values
         const arr = []
-        for (let i = 0; i < tracked.length; i++) arr.unshift(_wrap(tracked[i]))
+        for (let i = 0; i < tracked.length; i++) {
+            if (_ruleHitRaw(blockedApps, tracked[i])) { tracked[i].tracked = false; continue }
+            arr.unshift(_wrap(tracked[i]))
+        }
         items = arr
     }
 }

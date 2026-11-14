@@ -24,19 +24,20 @@ Item {
 
     function basePos(id) {
         const c = { clock: [0.5, 0.27], date: [0.5, 0.42], weather: [0.40, 0.50], media: [0.60, 0.50],
+                    notif: [0.80, 0.46],
                     user: [0.5, 0.66], password: [0.5, 0.83], power: [0.93, 0.94] }[id] || [0.5, 0.5]
         let x = c[0], y = c[1]
         if (id === "power") return { x: x, y: y }
         if (layoutMode === "top")
-            y = { clock: 0.15, date: 0.30, weather: 0.38, media: 0.38, user: 0.54, password: 0.72 }[id]
+            y = { clock: 0.15, date: 0.30, weather: 0.38, media: 0.38, notif: 0.38, user: 0.54, password: 0.72 }[id]
         else if (layoutMode === "bottom")
-            y = { clock: 0.36, date: 0.50, weather: 0.58, media: 0.58, user: 0.72, password: 0.88 }[id]
-        else if (layoutMode === "left")
+            y = { clock: 0.36, date: 0.50, weather: 0.58, media: 0.58, notif: 0.58, user: 0.72, password: 0.88 }[id]
+        else if (layoutMode === "left" && id !== "notif")
             x = 0.22 + (x - 0.5) * 0.9
         return { x: x, y: y }
     }
     function defColor(id) {
-        return { clock: "primary", date: "tertiary", weather: "tertiary", media: "secondary", user: "primary" }[id] || "surface"
+        return { clock: "primary", date: "tertiary", weather: "tertiary", media: "secondary", notif: "surface", user: "primary" }[id] || "surface"
     }
     function wc(id) {
         const o = wmap[id] || {}
@@ -378,6 +379,22 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: MediaService.togglePlay()
             }
+        }
+    }
+
+    // ── сповіщення на локскріні ──
+    LockWidget {
+        id: wNotif
+        host: scene
+        wid: "notif"
+        shown: scene.editable || (String(scene.cfg("notifMode") || "count") !== "off"
+                                  && NotificationService.count > 0)
+        opacity: scene.stage(0.3, 0.4)
+
+        LockNotifWidget {
+            host: scene
+            shaped: wNotif.shaped
+            shapeFg: wNotif.fg
         }
     }
 

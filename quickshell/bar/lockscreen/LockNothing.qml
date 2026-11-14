@@ -68,6 +68,7 @@ Item {
             date:     [0.50, 0.445],
             weather:  [scene.mediaShown ? 0.405 : 0.500, 0.535],
             media:    [scene.weatherShown ? 0.595 : 0.500, 0.535],
+            notif:    [0.800, 0.460],
             user:     [0.50, 0.655],
             password: [0.50, 0.845],
             power:    [0.947, 0.947]
@@ -75,15 +76,15 @@ Item {
         let x = c[0], y = c[1]
         if (id === "power") return { x: x, y: y }
         const shift = {
-            top:    { clock: 0.175, date: 0.315, weather: 0.405, media: 0.405, user: 0.525, password: 0.735 },
-            bottom: { clock: 0.425, date: 0.565, weather: 0.645, media: 0.645, user: 0.745, password: 0.905 }
+            top:    { clock: 0.175, date: 0.315, weather: 0.405, media: 0.405, notif: 0.405, user: 0.525, password: 0.735 },
+            bottom: { clock: 0.425, date: 0.565, weather: 0.645, media: 0.645, notif: 0.645, user: 0.745, password: 0.905 }
         }[layoutMode]
         if (shift && shift[id] !== undefined) y = shift[id]
-        else if (layoutMode === "left") x = 0.30 + (x - 0.5) * 0.75
+        else if (layoutMode === "left" && id !== "notif") x = 0.30 + (x - 0.5) * 0.75
         return { x: x, y: y }
     }
     function defColor(id) {
-        return { clock: "primary", date: "tertiary", weather: "secondary", media: "secondary", user: "primary" }[id] || "surface"
+        return { clock: "primary", date: "tertiary", weather: "secondary", media: "secondary", notif: "secondary", user: "primary" }[id] || "surface"
     }
     function wc(id) {
         const o = wmap[id] || {}
@@ -487,6 +488,22 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: MediaService.togglePlay()
             }
+        }
+    }
+
+    // ---------------------------------------------------------------- сповіщення
+    LockWidget {
+        id: wNotif
+        host: scene
+        wid: "notif"
+        shown: scene.editable || (String(scene.cfg("notifMode") || "count") !== "off"
+                                  && NotificationService.count > 0)
+        opacity: scene.st(0.3, 0.4)
+
+        LockNotifWidget {
+            host: scene
+            shaped: wNotif.shaped
+            shapeFg: wNotif.fg
         }
     }
 

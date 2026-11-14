@@ -237,6 +237,12 @@ ShellRoot {
         function dnd(): void    { NotificationService.setDnd(!NotificationService.dnd) }
         function muteApp(key: string): void   { NotificationService.muteApp(key) }
         function unmuteApp(key: string): void { NotificationService.unmuteApp(key) }
+        function blockApp(key: string): void {
+            if (NotificationService.setRule("blocked", key, true)) NotificationService.clearApp(key)
+        }
+        function unblockApp(key: string): void { NotificationService.setRule("blocked", key, false) }
+        function priorityApp(key: string): void { NotificationService.setRule("priority", key, true) }
+        function unpriorityApp(key: string): void { NotificationService.setRule("priority", key, false) }
     }
 
     // M3 OSD (гучність / яскравість)

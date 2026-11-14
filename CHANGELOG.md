@@ -13,6 +13,21 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 - Docs site: Nook-styled `404.html` (served with a real 404 status by nginx),
   `robots.txt`, `sitemap.xml`, and canonical/Open Graph/Twitter metadata plus a
   1200x630 `og.png` on every page, so shared links get a preview card.
+- Lock screen notifications: a counter or a compact list of the newest alerts
+  (Settings → Lock screen → Notifications). The text is hidden by default, so
+  the lock screen only reveals the app and the count until you opt in.
+- Notification rules: block an app completely (it is never stored or shown) or
+  mark it as priority (bypasses Do Not Disturb) from the group header in the
+  notification center. Patterns accept `*` and `?` and ignore case.
+
+### Fixed
+
+- Settings no longer overwrites a hand-edited JSON config with the copy it read
+  at startup: every write re-reads the file from disk first, the window
+  refreshes all files when it opens, and a file that is temporarily invalid or
+  half-written is left untouched instead of being replaced. Consecutive writes
+  now wait for the previous save to land, so two quick changes cannot lose the
+  first one.
 
 ## [1.1.0] — 2026-11-13
 

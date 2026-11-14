@@ -181,7 +181,9 @@ Singleton {
                 iconSize:   { type: "num", min: 28, max: 56, step: 2, default: 40, label: "Icon size", suffix: " px", path: "notif.iconSize" },
                 density:    { type: "enum", options: ["compact","normal","spacious"], default: "normal", label: "Card density", path: "notif.density" },
                 centerWidth:{ type: "num", min: 320, max: 560, step: 10, default: 460, label: "Center width", suffix: " px", path: "notif.centerWidth" },
-                muted:      { type: "arr", default: [], hidden: true, path: "notif.muted" }
+                muted:      { type: "arr", default: [], hidden: true, path: "notif.muted" },
+                blocked:    { type: "arr", default: [], hidden: true, path: "notif.blocked" },
+                priority:   { type: "arr", default: [], hidden: true, path: "notif.priority" }
             }
         },
         layout: {
@@ -294,6 +296,10 @@ Singleton {
                 showUser:       { type: "bool", default: true, group: "section.lock.widgets", label: "Show user name" },
                 weatherWidget:  { type: "bool", default: false, group: "section.lock.widgets", label: "Weather widget" },
                 mediaWidget:    { type: "bool", default: false, group: "section.lock.widgets", label: "Now playing widget" },
+
+                notifMode:      { type: "enum", options: ["off","count","list"], default: "count", group: "section.lock.notifications", label: "Notifications on lock screen", desc: "Off hides them. Counter shows how many are waiting. List adds compact cards." },
+                notifContent:   { type: "bool", default: false, group: "section.lock.notifications", label: "Show notification text", desc: "Off keeps only the app and the count, so the lock screen reveals nothing sensitive." },
+                notifMax:       { type: "num", min: 1, max: 10, step: 1, default: 3, group: "section.lock.notifications", label: "Cards to show" },
 
                 fillMode:       { type: "enum", options: ["fill","fit","stretch"], default: "fill", group: "section.lock.background", label: "Wallpaper fill mode" },
                 blurStrength:   { type: "num", min: 0, max: 1, step: 0.05, default: 0.4, group: "section.lock.background", label: "Blur strength" },
