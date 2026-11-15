@@ -836,6 +836,12 @@ PanelWindow {
                     enabledByConfig: BarConfig.moduleEnabled("clock")
                     onClicked: win.openPanel("dashboard")
                 }
+                LiveSpot {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    onMediaRequested: win.openPanel("media")
+                    onTimerRequested: win.openPanel("dashboard")
+                }
                 // з'являються лише під час запису / ігрового режиму; клік зупиняє
                 RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
                 GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
@@ -879,6 +885,12 @@ PanelWindow {
                     cross: win.inner
                     enabledByConfig: BarConfig.moduleEnabled("clock")
                     onClicked: win.openPanel("dashboard")
+                }
+                LiveSpot {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    onMediaRequested: win.openPanel("media")
+                    onTimerRequested: win.openPanel("dashboard")
                 }
                 ResourcesModule {
                     Layout.alignment: Qt.AlignVCenter

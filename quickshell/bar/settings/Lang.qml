@@ -752,6 +752,8 @@ Singleton {
             "f.bar.pillHover.desc":            "Показувати додаткові модулі, коли курсор над пілом.",
             "f.bar.pillEdgeGap.label":         "Пілл: відступ від краю",
             "f.bar.pillCloseOnEscape.label":   "Пілл: закривати по Esc",
+            "f.bar.live.label":                "Жива капсула",
+            "f.bar.live.desc":                 "У стилі «пілл» показувати поточну подію всередині капсули — нове сповіщення, таймер або музику.",
 
             "f.modules.workspaces.label":      "Робочі простори",
             "f.modules.clock.label":           "Годинник",

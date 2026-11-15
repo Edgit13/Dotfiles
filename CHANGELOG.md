@@ -10,6 +10,13 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ### Added
 
+- Live capsule in the pill bar: instead of leaving the pill empty, it shows the
+  one thing that matters right now — a new notification (app icon, title, red
+  dot for critical alerts), the next timer when it is under 30 minutes, or the
+  track that is playing with a small equalizer. The event clears itself, the
+  capsule narrows again, and a click opens the matching surface (notification
+  center, dashboard timers, media player). Toggle it in Settings → Bar → “Live
+  capsule”.
 - Docs site: Nook-styled `404.html` (served with a real 404 status by nginx),
   `robots.txt`, `sitemap.xml`, and canonical/Open Graph/Twitter metadata plus a
   1200x630 `og.png` on every page, so shared links get a preview card.

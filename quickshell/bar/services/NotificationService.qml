@@ -319,7 +319,9 @@ Singleton {
         const arr = []
         for (let i = 0; i < tracked.length; i++) {
             if (_ruleHitRaw(blockedApps, tracked[i])) { tracked[i].tracked = false; continue }
-            arr.unshift(_wrap(tracked[i]))
+            const it = _wrap(tracked[i])
+            it.restored = true
+            arr.unshift(it)
         }
         items = arr
     }

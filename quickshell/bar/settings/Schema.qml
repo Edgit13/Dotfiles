@@ -53,6 +53,7 @@ Singleton {
                 pillHover:         { type: "bool", default: true, label: "Pill: expand on hover", desc: "Show extra modules when hovering the pill." },
                 pillEdgeGap:       { type: "num", min: 0, max: 32, step: 1, default: 8, label: "Pill: edge gap", suffix: "px" },
                 pillCloseOnEscape: { type: "bool", default: true, label: "Pill: close on Esc" },
+                live:              { type: "bool", default: true, label: "Live capsule", desc: "In pill style, show the current activity inside the capsule — a new notification, a timer or playing media." },
                 perMonitor:  { type: "map", default: {}, hidden: true }
             }
         },

@@ -25,6 +25,7 @@ Scope {
     property bool read: false
     property bool pinned: false
     property real snoozedUntil: 0
+    property bool restored: false       // відновлене після reload → не показувати як «нове» в барі
 
     // спливаюче вікно
     property bool popup: false
