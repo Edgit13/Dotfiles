@@ -38,6 +38,7 @@ ShellRoot {
     ScreenTool        { id: screenTool }
     LockScreen        { id: lockScreen }
     LockDesktopEditor { id: lockDesktopEditor }
+    PolkitDialog      { id: polkitDialog }
 
     Connections {
         target: ShellState
@@ -259,6 +260,16 @@ ShellRoot {
         function volumeMute(): void       { OsdService.volumeMute() }
         function brightnessUp(): void     { OsdService.brightnessStep(5) }
         function brightnessDown(): void   { OsdService.brightnessStep(-5) }
+    }
+
+    // стан полікіт-агента: qs ipc call polkit status
+    IpcHandler {
+        target: "polkit"
+        function status(): string {
+            if (!PolkitService.registered) return "inactive"
+            return PolkitService.active ? "asking" : "ready"
+        }
+        function cancel(): void { PolkitService.cancel() }
     }
 
     // анімація перемикання теми (повноекранний click-through шар)

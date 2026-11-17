@@ -10,6 +10,13 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ### Added
 
+- Polkit agent: privileged actions (`pkexec`, system updates, mounting disks) now
+  ask for the password in the shell itself — a Material 3 / Nothing dialog on the
+  active monitor, <kbd>Enter</kbd> to confirm, <kbd>Esc</kbd> to cancel, and a
+  wrong password stays open for another try. Previously no agent was registered,
+  so those actions either failed or waited for a password in a terminal;
+  `polkit-gnome` is no longer needed. `edots ipc polkit status` reports whether
+  the agent is registered.
 - Live capsule in the pill bar: instead of leaving the pill empty, it shows the
   one thing that matters right now — a new notification (app icon, title, red
   dot for critical alerts), the next timer when it is under 30 minutes, or the
