@@ -56,6 +56,7 @@ wallpaper repaints the bar, GTK, terminals, Firefox, rofi and KDE.
 | 🎚 **Audio studio** | 10-band EQ, presets, bypass and RNNoise mic cleanup via EasyEffects. |
 | 🔀 **Per-app audio** | Per-app volume, mute and pinned output devices. |
 | 🖥 **Display centre** | Resolution, refresh, scale, rotation and layout with an 18-second safety rollback. |
+| 🧪 **Convert ring** | Select files, press <kbd>Super</kbd>+right click: a ring at the pointer converts pictures, video and sound to PNG/JPG/WebP/AVIF/GIF/ICO, MP4/WebM/MKV/GIF or MP3/WAV/FLAC/OGG/M4A with size estimates; the result goes to a `Converted` folder beside the originals. |
 | 🎥 **Screen tools** | Screenshot, region OCR, Google Lens and recording in the bar. |
 | 🌙 **Night light** | Warm the screen with `gammastep` — manual or a sunrise/sunset schedule. |
 | ⬆️ **Update centre** | Non-locking repo/AUR/Flatpak check; updates run in a terminal. |

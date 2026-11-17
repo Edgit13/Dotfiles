@@ -39,6 +39,7 @@ ShellRoot {
     LockScreen        { id: lockScreen }
     LockDesktopEditor { id: lockDesktopEditor }
     PolkitDialog      { id: polkitDialog }
+    ConvertRing       { id: convertRing }
 
     Connections {
         target: ShellState
@@ -270,6 +271,20 @@ ShellRoot {
             return PolkitService.active ? "asking" : "ready"
         }
         function cancel(): void { PolkitService.cancel() }
+    }
+
+    // кільце конвертації: qs ipc call convert open <payload.json>
+    IpcHandler {
+        target: "convert"
+        function open(path: string): void { ConvertService.openFrom(path) }
+        function close(): void { ConvertService.close() }
+        function select(kind: string): void {
+            if (["image", "video", "audio"].indexOf(kind) >= 0) ConvertService.level = kind
+        }
+        function pick(fmt: string): void { ConvertService.pick(fmt) }
+        function status(): string {
+            return ConvertService.open ? "open" : (ConvertService.busy ? "busy" : "idle")
+        }
     }
 
     // анімація перемикання теми (повноекранний click-through шар)

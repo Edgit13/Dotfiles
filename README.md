@@ -61,6 +61,7 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 | 🔔 **Own notification daemon** | Popups and a notification center with unread state, pin, snooze, per-app mute, search, All / Unread / Pinned filters, copy text, clear-read, history limit, card density/icon size and Do Not Disturb. Block an app entirely or mark it priority (bypasses DND) from its group header; the same alerts can appear on the lock screen as a counter or a compact list with the text hidden by default. The bar bell expands into a live pill for new notifications. `swaync` is not required. |
 | 🔒 **Lock screen** | Quickshell + PAM lock screen: ken burns, parallax, floating shapes, power buttons. Lock-then-suspend through logind. Optional **Face ID** unlocks from the webcam; the password always works. |
 | 🌙 **Idle & session** | Lock, display-off and suspend timers in *Settings → System → Session*; `swayidle` is regenerated live. `edots session` shows the effective timers and exposes lock / suspend / logout / reboot / poweroff. |
+| 🧪 **Convert ring** | Select files in your file manager and press <kbd>Super</kbd>+right click: a ring opens at the pointer — pictures (PNG/JPG/WebP/AVIF/GIF/ICO), video (MP4/WebM/MKV/GIF) or sound (MP3/WAV/FLAC/OGG/M4A), each with an estimate of the result's size before you commit. Files land in a `Converted` folder next to the originals; video can also be pulled out as sound. Pictures go through ImageMagick, video and sound through ffmpeg (NVENC when it really works). |
 | 🔐 **Polkit agent** | Privileged actions (`pkexec`, updates, mounting disks) ask for the password in an Edots dialog on the monitor you are using — the same Material 3 / Nothing card, <kbd>Enter</kbd> confirms, <kbd>Esc</kbd> cancels, a wrong password lets you retry. No `polkit-gnome` needed; the shell registers itself with polkitd. |
 | 🔊 **OSD** | Volume and brightness overlays on the active monitor. |
 | 🎮 **Game mode** | One switch turns off blur, animations and effects; the bar shows a pill while it is active. |
@@ -289,6 +290,9 @@ edots app-audio ui       # open Mixer → Apps
 edots plugin             # list plugins; open|enable|disable|toggle|reload|folder|path
 edots plugin open world-clock
 edots plugin enable world-clock
+edots convert ring       # the ring (Super + right click); reads the copied/selected files
+edots convert webp shot.png     # convert straight from the terminal
+edots convert formats    # what each kind can become
 edots osd volumeUp       # volumeDown, volumeMute, brightnessUp, brightnessDown
 edots theme toggleDesign # Material <-> Nothing
 edots theme setMode dark # or: light, toggleMode
@@ -308,7 +312,8 @@ qs -p ~/.config/quickshell/bar/shell.qml ipc call dashboard toggle
 Available raw targets include `pill` (`toggleLauncher`, `toggleWallpaper`, `toggleClipboard`,
 `toggleMixer`, `toggleAudio`, `toggleWifi`, `toggleMedia`, `togglePower`, `toggleBinds`, `toggleResources`, `close`),
 `audio`, `display`, `plugins`, `dashboard`, `tasks`, `settingsapp`, `screentool`, `notifications`, `osd`,
-`polkit` (`status`, `cancel`) and `theme`.
+`polkit` (`status`, `cancel`), `convert` (`open` *payload.json*, `select` *kind*, `pick` *format*,
+`close`, `status`) and `theme`.
 
 <br>
 

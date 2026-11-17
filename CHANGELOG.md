@@ -10,6 +10,19 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ### Added
 
+- Convert ring: select files in a file manager and press <kbd>Super</kbd>+right
+  click (or <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) — a ring opens at the
+  pointer. First the kind (pictures / video / sound, with how many files of
+  each), then the format: PNG, JPG, WebP, AVIF, GIF, ICO for pictures; MP4,
+  WebM, MKV, GIF for video; MP3, WAV, FLAC, OGG, M4A for sound — video can be
+  pulled out as sound too. Every slot shows an estimate of the result
+  (`≈19 KB (now 7 KB)`) and the formats a file already is are disabled. Results
+  go to a `Converted` folder next to the originals, originals are untouched,
+  names never overwrite: pictures through ImageMagick, video and sound through
+  ffmpeg with NVENC when it really opens. <kbd>Esc</kbd> steps back a ring,
+  <kbd>1</kbd>–<kbd>9</kbd> pick a slot. The same thing from the terminal:
+  `edots convert webp shot.png`. Note: window resizing moved from
+  <kbd>Super</kbd>+right-drag to <kbd>Super</kbd>+<kbd>Alt</kbd>+right-drag.
 - Polkit agent: privileged actions (`pkexec`, system updates, mounting disks) now
   ask for the password in the shell itself — a Material 3 / Nothing dialog on the
   active monitor, <kbd>Enter</kbd> to confirm, <kbd>Esc</kbd> to cancel, and a

@@ -33,6 +33,10 @@ FACEID_HELPER="$HOME/.config/quickshell/bar/scripts/faceid.sh"
 [ -f "$FACEID_HELPER" ] || FACEID_HELPER="$REPO_DIR/quickshell/bar/scripts/faceid.sh"
 NIGHTLIGHT_HELPER="$HOME/.config/quickshell/bar/scripts/nightlight.py"
 [ -f "$NIGHTLIGHT_HELPER" ] || NIGHTLIGHT_HELPER="$REPO_DIR/quickshell/bar/scripts/nightlight.py"
+CONVERT_HELPER="$HOME/.config/quickshell/bar/scripts/convert.py"
+[ -f "$CONVERT_HELPER" ] || CONVERT_HELPER="$REPO_DIR/quickshell/bar/scripts/convert.py"
+CONVERT_RING="$HOME/.config/quickshell/bar/scripts/convert-ring.sh"
+[ -f "$CONVERT_RING" ] || CONVERT_RING="$REPO_DIR/quickshell/bar/scripts/convert-ring.sh"
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     C_OK=$'\033[0;32m'; C_WARN=$'\033[0;33m'; C_ERR=$'\033[0;31m'
@@ -347,6 +351,9 @@ ${C_BOLD}Surfaces${C_OFF}
   edots screenshot [stop]     screen capture       (Super+U)
   edots ocr                   select a region, copy its text
   edots lens                  select a region, search with Google Lens
+  edots convert ring          convert files (Super + right click in a file manager)
+  edots convert <fmt> <files…>   e.g. edots convert webp shot.png
+  edots convert formats       what each kind can become
   edots nightlight [on|off|toggle|temp N|status]   warm screen (gammastep)
   edots updates [open|refresh|update]   update centre (repo + AUR + Flatpak)
   edots diagnostics           health report in a surface (edots doctor --json)
@@ -437,6 +444,26 @@ case "$cmd" in
         ;;
     lens|google-lens)
         ipc_open screentool lens
+        ;;
+    convert|conv)
+        action="${1:-}"
+        case "$action" in
+            ring|pick)
+                exec bash "$CONVERT_RING"
+                ;;
+            formats|kinds|list)
+                exec python3 "$CONVERT_HELPER" kinds --plain
+                ;;
+            ""|help)
+                die "usage: edots convert <fmt> <files…>   (or: edots convert ring — Super + right click)"
+                ;;
+            *)
+                fmt="$1"
+                shift
+                [ "$#" -gt 0 ] || die "usage: edots convert <fmt> <files…>"
+                exec python3 "$CONVERT_HELPER" convert "$fmt" --plain "$@"
+                ;;
+        esac
         ;;
     notifications|notif)
         action="${1:-toggle}"
