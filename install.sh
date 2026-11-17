@@ -562,6 +562,16 @@ post_install() {
       c_warn "  systemctl --user disable --now edots-lockscreen.service"
       FAILED+=("systemd:obsolete:edots-lockscreen")
     fi
+
+    # The shell runs its own notification daemon. swaync ships a D-Bus service
+    # file for org.freedesktop.Notifications, so systemd starts it whenever a
+    # notification arrives while the shell is down (restart, crash) — it then
+    # dies with "Could not acquire notification name" and restart-loops.
+    if systemctl --user mask swaync.service 2>/dev/null; then
+      c_ok "swaync.service masked (the shell has its own notification daemon)"
+    else
+      c_warn "could not mask swaync.service"; FAILED+=("systemd:mask:swaync")
+    fi
   fi
 
   # ───────────────────── enable initial colour generation ─────────────────────

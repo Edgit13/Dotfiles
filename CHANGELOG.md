@@ -66,6 +66,12 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
   half-written is left untouched instead of being replaced. Consecutive writes
   now wait for the previous save to land, so two quick changes cannot lose the
   first one.
+- swaync no longer starts behind the shell's own notification daemon. The
+  package ships a D-Bus service file for `org.freedesktop.Notifications`, so
+  any notification that arrived while the bar was restarting made systemd
+  launch swaync; it failed with “Could not acquire notification name” and
+  restart-looped. `install.sh` now masks `swaync.service`
+  (`systemctl --user mask swaync.service` fixes an existing install).
 
 ## [1.1.0] — 2026-11-13
 
