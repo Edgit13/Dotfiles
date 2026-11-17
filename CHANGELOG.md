@@ -23,6 +23,17 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
   <kbd>1</kbd>–<kbd>9</kbd> pick a slot. The same thing from the terminal:
   `edots convert webp shot.png`. Note: window resizing moved from
   <kbd>Super</kbd>+right-drag to <kbd>Super</kbd>+<kbd>Alt</kbd>+right-drag.
+- Clipboard surface: <kbd>Super</kbd>+<kbd>V</kbd> is now a searchable history
+  with real previews. Images show a decoded thumbnail with size and format,
+  colours a swatch and the hex value, links the site and the full URL, file
+  lists the first name plus “+N more”, and the chips at the top filter by type
+  with live counts (all / text / images / files / links / colours). The list
+  follows the keyboard — <kbd>↑</kbd>/<kbd>↓</kbd> move and scroll it,
+  <kbd>Enter</kbd> or a click copies and closes, <kbd>Ctrl</kbd>+<kbd>Delete</kbd>
+  removes one entry, <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Delete</kbd> asks
+  once and then wipes the history. Parsing and image decoding live in
+  `scripts/clipboard.py`; thumbnails are cached in `~/.cache/edots/clipvis` and
+  pruned as the history changes.
 - Polkit agent: privileged actions (`pkexec`, system updates, mounting disks) now
   ask for the password in the shell itself — a Material 3 / Nothing dialog on the
   active monitor, <kbd>Enter</kbd> to confirm, <kbd>Esc</kbd> to cancel, and a

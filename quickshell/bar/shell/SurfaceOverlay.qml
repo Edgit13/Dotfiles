@@ -63,7 +63,7 @@ PanelWindow {
     readonly property var meta: ({
         launcher:  { icon: "\ue5c3", title: "ui.surface.launcher",  w: 560, h: 520, end: false, typing: true },
         wallpaper: { icon: "\ue1bc", title: "ui.surface.wallpaper", w: 620, h: 480, end: false, typing: false },
-        clipboard: { icon: "\ue14f", title: "ui.surface.clipboard", w: 540, h: 480, end: false, typing: true },
+        clipboard: { icon: "\ue14f", title: "ui.surface.clipboard", w: 640, h: 600, end: false, typing: true },
         mixer:     { icon: "\ue429", title: "ui.surface.mixer",     w: 480, h: 420, end: true,  typing: false },
         audio:     { icon: "\ue050", title: "ui.surface.audio",     w: 600, h: 660, end: true,  typing: false },
         display:   { icon: "\ue30f", title: "ui.surface.display",   w: 640, h: 680, end: true,  typing: false },

@@ -134,7 +134,7 @@ PanelWindow {
         const sizes = {
             wifi: [460, 440], bluetooth: [460, 480], mixer: [480, 420], audio: [600, 660],
             media: [460, 320], power: [480, 700], launcher: [560, 520],
-            wallpaper: [620, 480], clipboard: [540, 480], binds: [700, 620], resources: [560, 620]
+            wallpaper: [620, 480], clipboard: [640, 600], binds: [700, 620], resources: [560, 620]
         }
         for (const plugin of (PluginService.surfaces || []))
             sizes["plugin:" + plugin.id] = [plugin.surface.w, plugin.surface.h]
