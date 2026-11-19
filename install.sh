@@ -85,8 +85,8 @@ FAILED=()
 # ── read from the terminal even when the script itself comes through a pipe (curl | bash) ──
 rd() {  # rd "prompt" VAR
   local _p="$1" _v="$2" _a=""
-  if [ -t 0 ]; then rd "$_p" _a || _a=""
-  elif [ -r /dev/tty ]; then rd "$_p" _a </dev/tty || _a=""
+  if [ -t 0 ]; then read -r -p "$_p" _a || _a=""
+  elif [ -r /dev/tty ]; then read -r -p "$_p" _a </dev/tty || _a=""
   fi
   printf -v "$_v" '%s' "$_a"
 }
