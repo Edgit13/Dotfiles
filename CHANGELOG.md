@@ -66,6 +66,16 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ### Fixed
 
+- The installer now actually switches the login shell to `fish`. Before, the
+  package and its config were installed but `chsh` was never run, so terminals
+  kept opening in bash — the shell was installed, not active. It adds the
+  binary to `/etc/shells` when missing and skips the change for root.
+- MangoWM is installed from `mangowm-git`; the AUR package was renamed from
+  `mangowc-git`, which made a fresh install skip the compositor entirely.
+- Minimum hardware is documented and checked: x86_64, 2 cores, 4 GB RAM and
+  30 GB free disk. Below 4 GB the installer warns and caps build jobs at 2
+  (`MAKEFLAGS`/`NINJAFLAGS`/`CARGO_BUILD_JOBS`), below 25 GB free it warns
+  about disk.
 - Settings no longer overwrites a hand-edited JSON config with the copy it read
   at startup: every write re-reads the file from disk first, the window
   refreshes all files when it opens, and a file that is temporarily invalid or

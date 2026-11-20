@@ -53,8 +53,12 @@
       <h2>Requirements</h2>
       <div class="prose">
         <ul>
+          <li><strong>Minimum:</strong> x86_64 with 2 cores, <strong>4 GB RAM</strong> and
+              <strong>30 GB free disk</strong>. 2 GB works only with swap/zram and heavy swapping —
+              <code>yay</code> (Go) and <code>matugen</code> (Rust) are built from source, and the
+              installer caps build jobs below 4 GB.</li>
           <li><strong>Quickshell</strong> with Io, Wayland, Services, Networking, UPower, Pipewire and Mpris.</li>
-          <li><strong>MangoWM</strong> (<code>mangowc-git</code>) — the shell talks to its JSON <code>mmsg</code> IPC.</li>
+          <li><strong>MangoWM</strong> (<code>mangowm-git</code>) — the shell talks to its JSON <code>mmsg</code> IPC.</li>
           <li><strong>Fonts:</strong> JetBrainsMono Nerd Font, Material Symbols Rounded, Google Sans Flex.
               SF Pro Display and SF Mono are optional and proprietary.</li>
           <li><strong>Tools:</strong> matugen, awww, cliphist, brightnessctl, nmcli, rfkill, playerctl,
@@ -94,6 +98,7 @@ cd ~/Dotfiles
           <li>Installs packages from pacman and the AUR, bootstrapping <code>yay</code> when needed.</li>
           <li>Installs Google Sans Flex.</li>
           <li>Runs <code>./sync.sh install</code> — symlinks configs into <code>~/.config</code> and installs the <code>edots</code> command.</li>
+          <li>Sets <strong>fish</strong> as the login shell (<code>chsh</code>, adding it to <code>/etc/shells</code> when needed).</li>
           <li>Registers and starts the <code>swayidle</code> user service.</li>
           <li>Builds <code>lockscreen/pam-auth</code>.</li>
           <li>Generates the first palette from the first wallpaper.</li>

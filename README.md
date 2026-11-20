@@ -150,8 +150,9 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 
 ## 📦 Requirements
 
+- **Minimum:** x86_64 with 2 cores, **4 GB RAM** and **30 GB free disk**. 2 GB runs only with swap/zram and heavy swapping, because `yay` (Go) and `matugen` (Rust) are built from source; `install.sh` warns and caps build jobs below 4 GB.
 - **[Quickshell](https://quickshell.org)** with Io / Wayland / Services / Networking / UPower / Pipewire / Mpris
-- **[MangoWM](https://github.com/DreamMaoMao/mangowc)** (`mangowc-git`) — uses the JSON `mmsg` IPC (`get` / `watch` / `dispatch`)
+- **[MangoWM](https://github.com/DreamMaoMao/mangowc)** (`mangowm-git`) — uses the JSON `mmsg` IPC (`get` / `watch` / `dispatch`)
 - **Fonts:** `SF Pro Display` (optional, proprietary), `SF Mono`, `JetBrainsMono Nerd Font`, `Material Symbols Rounded`, `Google Sans Flex`
 - **Tools:** `matugen`, `awww`, `cliphist`, `brightnessctl`, `nmcli`, `rfkill`, `playerctl`, `grim`, `tesseract`, `python3`, `python-pillow`, `jq`
 - **Lock screen:** `gcc` and PAM headers (`pam-auth` is built by `install.sh`)
@@ -173,11 +174,12 @@ What `install.sh` does:
 2. Installs packages from pacman and the AUR (`yay` is bootstrapped automatically).
 3. Installs Google Sans Flex.
 4. Runs `./sync.sh install` to symlink configs into `~/.config` and install the `edots` command.
-5. Registers and starts the `swayidle` systemd user service.
-6. Builds `lockscreen/pam-auth`.
-7. Generates the first palette from the first wallpaper.
-8. Builds the wallpaper colour index (needs `python-pillow`).
-9. Links the Firefox chrome files into the profile Firefox actually launches.
+5. Sets **fish** as the login shell (`chsh`, adding it to `/etc/shells` when needed).
+6. Registers and starts the `swayidle` systemd user service.
+7. Builds `lockscreen/pam-auth`.
+8. Generates the first palette from the first wallpaper.
+9. Builds the wallpaper colour index (needs `python-pillow`).
+10. Links the Firefox chrome files into the profile Firefox actually launches.
 
 Start the shell manually:
 

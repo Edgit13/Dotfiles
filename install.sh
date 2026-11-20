@@ -17,6 +17,10 @@
 #   git clone https://github.com/Edgit13/Dotfiles.git ~/Dotfiles
 #   cd ~/Dotfiles && ./install.sh
 #
+# Requires: x86_64 with 2 cores, 4 GB RAM and ~30 GB free disk. 2 GB works with
+# swap/zram but builds of yay and matugen will swap; the installer warns and
+# caps build jobs on low-RAM machines.
+#
 # Flags:
 #   --auto|--quickstart no questions (defaults everywhere)
 #   --yes               alias of --auto
@@ -115,6 +119,55 @@ ask_conflict() {
       *) c_warn "Enter s, a or o." ;;
     esac
   done
+}
+
+# ───────────────────── hardware check ─────────────────────
+check_hardware() {
+  local mem_mb="" disk_gb=""
+  mem_mb=$(awk '/^MemTotal:/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)
+  disk_gb=$(df -Pk "${HOME:-/}" 2>/dev/null | awk 'NR==2 {printf "%d", $2/1024/1024}')
+
+  [ -n "$mem_mb" ] && [ -n "$disk_gb" ] && c_info "Hardware: ${mem_mb} MB RAM, ${disk_gb} GB free in ${HOME}."
+
+  if [ -n "$mem_mb" ] && [ "$mem_mb" -lt 3800 ]; then
+    c_warn "RAM: ${mem_mb} MB — Edots prefers 4 GB. yay (Go) and matugen (Rust) are"
+    c_warn "      built from source; expect heavy swapping. Consider zram-generator."
+    export MAKEFLAGS="${MAKEFLAGS:--j2}"
+    export NINJAFLAGS="${NINJAFLAGS:--j2}"
+    export CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-2}"
+    c_warn "      Build jobs capped at 2 (MAKEFLAGS/NINJAFLAGS/CARGO_BUILD_JOBS)."
+  fi
+
+  if [ -n "$disk_gb" ] && [ "$disk_gb" -lt 25 ]; then
+    c_warn "Disk: ${disk_gb} GB free in ${HOME} — 30 GB recommended (packages, AUR builds, wallpapers)."
+  fi
+}
+
+# ───────────────────── login shell ─────────────────────
+ensure_fish_shell() {
+  [ "$DRY" = 1 ] && return 0
+  command -v fish >/dev/null 2>&1 || return 0
+  local fb; fb=$(command -v fish)
+
+  if [ "$(id -u)" = 0 ]; then
+    c_warn "running as root — leaving the login shell alone (use a normal user)"
+    return 0
+  fi
+  if [ "${SHELL##*/}" = "fish" ]; then
+    c_ok "fish is already the login shell"
+    return 0
+  fi
+
+  # chsh refuses a shell that is not listed in /etc/shells
+  grep -qxF "$fb" /etc/shells 2>/dev/null \
+    || echo "$fb" | sudo tee -a /etc/shells >/dev/null 2>&1
+
+  if sudo chsh -s "$fb" "$USER" >/dev/null 2>&1 || chsh -s "$fb" >/dev/null 2>&1; then
+    c_ok "fish set as the login shell (takes effect after relogin)"
+  else
+    c_warn "could not set fish as the login shell — run: chsh -s $fb"
+    FAILED+=("shell:fish")
+  fi
 }
 
 # ───────────────────── OS detection ─────────────────────
@@ -633,6 +686,7 @@ post_install() {
 install_arch() {
   c_info "Detected Arch-based distribution."
   sudo -v
+  check_hardware
 
   # ───────────────────── pacman (official repos) ─────────────────────
   PACMAN_PKGS=(
@@ -715,7 +769,7 @@ install_arch() {
 
   # ───────────────────── AUR ─────────────────────
   AUR_PKGS=(
-    mangowc-git
+    mangowm-git
     quickshell
     ttf-jetbrains-mono-nerd
     awww
@@ -741,6 +795,7 @@ install_arch() {
     FAILED+=("aur:all (no yay)")
   fi
 
+  ensure_fish_shell
   post_install
 }
 
@@ -799,6 +854,7 @@ pm_install_one() {  # $1 = «a|b|c»
 install_generic() {
   c_info "Detected $OS — generic path (packages one by one; missing ones are listed at the end)."
   sudo -v
+  check_hardware
   case "$OS" in
     debian) sudo apt-get update >/dev/null 2>&1 || true ;;
     fedora) sudo dnf copr enable -y errornointernet/quickshell >/dev/null 2>&1 || c_warn "COPR errornointernet/quickshell not enabled" ;;
@@ -826,6 +882,7 @@ install_generic() {
     [ -n "$k" ] && FAILED+=("manual:$k")
   done
   c_warn "SF Pro Display — proprietary, install manually if you want it."
+  ensure_fish_shell
   post_install
 }
 
