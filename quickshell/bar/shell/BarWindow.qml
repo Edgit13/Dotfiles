@@ -6,6 +6,7 @@ import "root:/modules/resources"
 import "root:/modules/gamemode"
 import "root:/modules/nightlight"
 import "root:/modules/record"
+import "root:/modules/privacy"
 import "root:/modules/launcher"
 import "root:/modules/window"
 import "root:/modules/clock"
@@ -457,6 +458,10 @@ PanelWindow {
                 BarGroup {
                     vertical: win.vertical
                     RecordModule { vertical: win.vertical; cross: win.inner }
+                    PrivacyModule {
+                        vertical: win.vertical; cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("privacy")
+                    }
                     GameModeModule { vertical: win.vertical; cross: win.inner }
                     NightLightModule {
                         vertical: win.vertical; cross: win.inner
@@ -844,6 +849,11 @@ PanelWindow {
                 }
                 // з'являються лише під час запису / ігрового режиму; клік зупиняє
                 RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                PrivacyModule {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    enabledByConfig: BarConfig.moduleEnabled("privacy")
+                }
                 GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
                 NightLightModule {
                     Layout.alignment: Qt.AlignVCenter
@@ -940,6 +950,11 @@ PanelWindow {
                     enabledByConfig: BarConfig.moduleEnabled("notifications")
                 }
                 RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                PrivacyModule {
+                    Layout.alignment: Qt.AlignVCenter
+                    cross: win.inner
+                    enabledByConfig: BarConfig.moduleEnabled("privacy")
+                }
                 GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
                 NightLightModule {
                     Layout.alignment: Qt.AlignVCenter

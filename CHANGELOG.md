@@ -10,6 +10,12 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 
 ### Added
 
+- Privacy indicators: an Android-style green dot appears in the bar while any
+  app is using the camera or microphone, next to a camera/mic glyph; hovering
+  it names the apps. Detection is event-driven — PipeWire capture streams
+  (`pw-dump -m`) plus inotify on `/dev/video*` for apps that open V4L2 directly,
+  so the helper (`scripts/privacy.py`) idles at ~0.05% CPU and exits with the
+  shell. Toggle in Settings → Modules → Privacy indicators.
 - Convert ring: select files in a file manager and press <kbd>Super</kbd>+right
   click (or <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) — a ring opens at the
   pointer. First the kind (pictures / video / sound, with how many files of

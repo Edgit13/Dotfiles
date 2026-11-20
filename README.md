@@ -84,6 +84,7 @@ Two designs — **Material 3 Expressive** and **Nothing** — one palette from y
 | 🧱 **Plugins** | Drop a folder with `plugin.json` into `~/.config/edots/plugins` to add a surface panel, a bar module, or both. Enable, inspect and reload them in *Settings → Plugins*; `edots plugin` lists them and `edots plugin open <id>` opens a panel. The bundled World Clock is a complete example. |
 | 🎥 **Screen tools** | Screenshot / region OCR / Google Lens / recording overlay, all in the bar shell (screentool) with a recording indicator. <kbd>Super</kbd>+<kbd>U</kbd>, `edots ocr`, `edots lens`. |
 | 🌙 **Night light** | Warm the screen with `gammastep` — manual temperature or an automatic sunrise/sunset schedule, from the bar, Settings or `edots nightlight`. |
+| 🟢 **Privacy indicators** | An Android-style green dot in the bar while an app is using the camera or microphone — with the app names on hover. Catches PipeWire captures and apps that open `/dev/video*` directly; toggle in Settings → Modules. |
 | ⬆️ **Update centre** | Non-locking check of repo, AUR and Flatpak updates (`checkupdates`, `yay/paru -Qum`, `flatpak remote-ls --updates`). "Update all" opens a terminal running `upkg update` — nothing installs silently. |
 | 🌍 **Languages** | English and Ukrainian UI. |
 | 🩺 **`edots` CLI** | One command for every surface — `edots launcher`, `edots settings`, `edots reload` — and `edots doctor` checks packages, fonts, links and services. |

@@ -144,6 +144,7 @@ Singleton {
                 notifications: { type: "bool", default: true, label: "Notifications", path: "modules.notifications" },
                 battery:       { type: "bool", default: true, label: "Battery", path: "modules.battery" },
                 nightlight:    { type: "bool", default: true, label: "Night light", path: "modules.nightlight" },
+                privacy:       { type: "bool", default: true, label: "Privacy indicators", desc: "Green dot in the bar while an app is using the camera or microphone.", path: "modules.privacy" },
                 power:         { type: "bool", default: true, label: "Power", path: "modules.power" }
             }
         },
