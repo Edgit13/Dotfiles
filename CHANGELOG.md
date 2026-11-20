@@ -63,6 +63,14 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
 - Notification rules: block an app completely (it is never stored or shown) or
   mark it as priority (bypasses Do Not Disturb) from the group header in the
   notification center. Patterns accept `*` and `?` and ignore case.
+- Notification center redesign: each app group has one “⋮” menu instead of five
+  header icons, the group header shows the app icon, notifications with images
+  get a rounded photo preview, and every card has pin / snooze (5, 15, 30 or 60
+  minutes) / “more” actions. A “N of M” subtitle appears while filtering or
+  searching. The whole center is keyboard driven — <kbd>↑</kbd>/<kbd>↓</kbd>
+  select, <kbd>Enter</kbd> opens, <kbd>Delete</kbd> dismisses,
+  <kbd>P</kbd> pins, <kbd>S</kbd> snoozes, <kbd>C</kbd> copies — and in-panel
+  menus close on an outside click without closing the center.
 
 ### Fixed
 
@@ -85,6 +93,23 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
   stops it when the filter is off, and reports a real error if the compositor
   rejects gamma. Stale `gammastep -x` processes are cleaned up on apply.
   `gammastep` was already in `install.sh`, so no new package is needed.
+- Settings pages always start at the top. Switching from a scrolled page kept
+  the old scroll offset, so Night light could open with its enable switch and
+  the manual / schedule choice hidden above the viewport — which made it look
+  like there was no mode selector at all.
+- The pill bar no longer pulls the module out from under the pointer when it
+  expands on hover: the core row (workspaces, clock, live capsule, night light,
+  language) keeps its exact position while the extra modules fade in on both
+  sides. While the pointer is on the pill it also stops re-centering, so a
+  notification that arrives mid-hover cannot shift the row either. On a screen
+  too narrow for the full hover row, the pill stays compact instead of letting
+  the extra modules clip at the edges.
+- The live capsule keeps its state in the notification service instead of in
+  each pill instance, so the compact and hover pills show the same event, it no
+  longer vanishes when the pill expands, and its countdown pauses while the
+  pointer is on the pill. Opening the notification center, dismissing the
+  notification or clearing history drops the capsule; a notification that
+  arrives during hover shows up already paused.
 - Settings no longer overwrites a hand-edited JSON config with the copy it read
   at startup: every write re-reads the file from disk first, the window
   refreshes all files when it opens, and a file that is temporarily invalid or

@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import "root:/theme"
+import "root:/settings"
 import "root:/modules/common"
 import Quickshell
 import Quickshell.Services.SystemTray
@@ -16,6 +17,9 @@ BarButton {
 
     required property var item
     property string placement: "top"        // top | bottom | left | right
+    property bool hiddenInBar: false        // true — іконка лежить в overflow-панелі, а не в барі
+    signal hideToggled()                    // Ctrl+клік або пункт меню «Сховати / Показувати в барі»
+    signal interacted()                     // після activate()/secondaryActivate() — overflow-панель закривається
 
     readonly property int glyphSize: Theme.type.iconS
     readonly property int cell: glyphSize + Theme.space.xs * 2
@@ -85,14 +89,19 @@ BarButton {
     }
 
     onClicked: mouse => {
+        if (mouse.modifiers & Qt.ControlModifier) {          // Ctrl+клік — сховати / повернути в бар
+            root.hideToggled()
+            return
+        }
         if (mouse.button === Qt.MiddleButton) {
             root.item.secondaryActivate()
+            root.interacted()
         } else if (mouse.button === Qt.RightButton) {
             if (root.item.hasMenu) root.openMenu()
-            else root.item.secondaryActivate()
+            else { root.item.secondaryActivate(); root.interacted() }
         } else {
             if (root.item.onlyMenu && root.item.hasMenu) root.openMenu()
-            else root.item.activate()
+            else { root.item.activate(); root.interacted() }
         }
     }
 
@@ -121,6 +130,9 @@ BarButton {
         id: menu
         anchorItem: root
         placement: root.placement
+        pinLabel: root.hiddenInBar ? Lang.t("tray.show") : Lang.t("tray.hide")
+        pinIcon: root.hiddenInBar ? "\ue8f4" : "\ue8f5"        // visibility / visibility_off
+        onPinClicked: root.hideToggled()
         onMenuDismissed: root.closedAt = Date.now()
     }
 

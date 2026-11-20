@@ -7,109 +7,188 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// NotificationGroup — сповіщення одного застосунку: заголовок + connected list карток.
-// У згорнутому вигляді — найновіша картка і «стопка» під нею.
+// NotificationGroup — сповіщення одного застосунку: шапка з іконкою, лічильниками
+// й меню «⋮», далі connected-картки. У згорнутому вигляді — найновіша картка
+// і «стопка» під нею; шапка розгортає/згортає групу.
 // modelData: { key, items, unread, pinned, latest } з NotificationService.appGroups()
 ColumnLayout {
     id: group
     required property var modelData
+    // Repeater у центрі передає індекс як required-властивість (ComponentBehavior: Bound)
+    required property int index
     readonly property string gkey: modelData.key
     readonly property var gItems: modelData.items || []
     readonly property var gLatest: modelData.latest
     readonly property int gUnread: modelData.unread || 0
     readonly property bool muted: NotificationService.isAppMuted(gkey)
+    readonly property bool priority: NotificationService.hasRule("priority", gkey)
+    readonly property bool blocked: NotificationService.hasRule("blocked", gkey)
+    readonly property bool multi: gItems.length > 1
+
+    // вибір з клавіатури в центрі
+    property var selectedItem: null
+    // staggered-вхід: центр передає index у списку, active — чи відкрита панель
+    property bool active: false
+    property int stackIndex: 0
+    property bool entered: false
     property bool expanded: false
+    signal menuRequested(var anchor, var actions)
 
     Layout.fillWidth: true
     spacing: Theme.space.xs
+    opacity: group.entered ? 1 : 0
+    transform: Translate {
+        y: group.entered ? 0 : -Theme.components.dp(10)
+        Behavior on y { MotionStagger { role: "enter"; delay: group.delay } }
+    }
+    Behavior on opacity { MotionStagger { role: "enter"; delay: group.delay } }
+    readonly property int delay: Math.min(group.stackIndex, 6) * 40
 
-    // ---- заголовок ----
-    RowLayout {
+    function replay() {
+        group.entered = false
+        enterTimer.restart()
+    }
+    onActiveChanged: if (group.active) group.replay()
+    // якщо клавіатура вибрала картку зі згорнутої групи — розгортаємо її
+    onSelectedItemChanged: {
+        if (group.selectedItem && group.gItems.indexOf(group.selectedItem) > 0)
+            group.expanded = true
+    }
+    Component.onCompleted: if (group.active) enterTimer.start()
+    Timer {
+        id: enterTimer
+        interval: 16
+        onTriggered: group.entered = true
+    }
+
+    // M3 overflow: замість п'яти іконок у шапці — одне меню
+    readonly property var headerActions: {
+        const list = []
+        if (group.gUnread > 0)
+            list.push({ icon: "done_all", label: Lang.t("ui.notif.markRead"),
+                        run: function () { NotificationService.markAppRead(group.gkey) } })
+        list.push({ icon: group.muted ? "volume_up" : "volume_off",
+                    label: group.muted ? Lang.t("ui.notif.unmuteApp") : Lang.t("ui.notif.muteApp"),
+                    active: group.muted,
+                    run: function () { NotificationService.toggleMuteApp(group.gkey) } })
+        list.push({ icon: "star",
+                    label: group.priority ? Lang.t("ui.notif.unpriorityApp") : Lang.t("ui.notif.priorityShort"),
+                    active: group.priority,
+                    run: function () { NotificationService.toggleRule("priority", group.gkey) } })
+        list.push({ icon: "block",
+                    label: group.blocked ? Lang.t("ui.notif.unblockApp") : Lang.t("ui.notif.blockApp"),
+                    danger: !group.blocked,
+                    run: function () { NotificationService.toggleBlockApp(group.gkey) } })
+        list.push({ icon: "close", label: Lang.t("ui.notif.clear"), danger: true,
+                    run: function () { NotificationService.clearApp(group.gkey) } })
+        return list
+    }
+
+    // ---- шапка ----
+    Item {
         Layout.fillWidth: true
-        Layout.leftMargin: Theme.space.xs
-        spacing: Theme.space.xs
+        implicitHeight: Math.max(Theme.components.dp(44),
+                                 headerRow.implicitHeight + Theme.space.xs * 2)
+        Behavior on implicitHeight { MotionAnimation { role: "morph" } }
 
         Rectangle {
-            implicitWidth: Theme.components.dp(18)
-            implicitHeight: implicitWidth
-            radius: width / 2
-            color: group.muted ? "transparent" : Theme.color.primary
-            border.width: group.muted ? 1 : 0
-            border.color: Theme.color.outlineVariant
-            opacity: group.muted ? 0.55 : 1
+            id: headerBg
+            anchors.fill: parent
+            radius: Theme.shape.cardLarge
+            color: headerMa.containsMouse && !Theme.settings.nothing
+                ? Theme.color.surfaceContainerHigh : "transparent"
+            border.width: Theme.settings.nothing && headerMa.containsMouse ? ThemeNothing.hairline : 0
+            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.18)
+            Behavior on color { MotionColorAnimation { role: "hover" } }
         }
-        ThemedText {
-            Layout.fillWidth: true
-            text: group.gkey
-            style: Theme.type.labelLarge
-            emphasized: true
-            color: group.muted ? Theme.color.fgSurfaceVariant : Theme.color.primary
-            elide: Text.ElideRight
+
+        MouseArea {
+            id: headerMa
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: group.multi ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: if (group.multi) group.expanded = !group.expanded
         }
-        Rectangle {
-            visible: group.gUnread > 0
-            implicitWidth: unreadTxt.implicitWidth + Theme.space.sm
-            implicitHeight: Theme.components.dp(18)
-            radius: height / 2
-            color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
-            border.width: Theme.settings.nothing ? 1 : 0
-            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.35)
-            ThemedText {
-                id: unreadTxt
-                anchors.centerIn: parent
-                text: group.gUnread
-                style: Theme.type.labelSmall
-                color: Theme.color.fgPrimaryContainer
+
+        RowLayout {
+            id: headerRow
+            anchors {
+                left: parent.left
+                right: parent.right
+                top: parent.top
+                bottom: parent.bottom
+                leftMargin: Theme.space.sm
+                rightMargin: Theme.space.xs
+                topMargin: Theme.space.xs
+                bottomMargin: Theme.space.xs
             }
-        }
-        Rectangle {
-            visible: group.gItems.length > 1
-            implicitWidth: cnt.implicitWidth + Theme.space.sm
-            implicitHeight: Theme.components.dp(18)
-            radius: height / 2
-            color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
-            border.width: Theme.settings.nothing ? 1 : 0
-            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.35)
-            ThemedText {
-                id: cnt
-                anchors.centerIn: parent
-                text: group.gItems.length
-                style: Theme.type.labelSmall
-                color: Theme.color.fgSecondaryContainer
+            spacing: Theme.space.sm
+
+            NotifIcon {
+                Layout.preferredWidth: Theme.components.dp(28)
+                Layout.preferredHeight: Theme.components.dp(28)
+                Layout.alignment: Qt.AlignVCenter
+                notif: group.gLatest
+                appOnly: true
             }
-        }
-        MaterialIconButton {
-            icon: group.muted ? "volume_off" : "volume_up"
-            width: Theme.components.dp(30); height: width
-            opacity: group.muted ? 1 : 0.6
-            onClicked: NotificationService.toggleMuteApp(group.gkey)
-        }
-        MaterialIconButton {
-            icon: "block"
-            width: Theme.components.dp(30); height: width
-            selected: NotificationService.hasRule("blocked", group.gkey)
-            opacity: selected ? 1 : 0.6
-            tooltip: selected ? Lang.t("ui.notif.unblockApp") : Lang.t("ui.notif.blockApp")
-            onClicked: NotificationService.toggleBlockApp(group.gkey)
-        }
-        MaterialIconButton {
-            icon: "star"
-            width: Theme.components.dp(30); height: width
-            selected: NotificationService.hasRule("priority", group.gkey)
-            opacity: selected ? 1 : 0.6
-            tooltip: selected ? Lang.t("ui.notif.unpriorityApp") : Lang.t("ui.notif.priorityApp")
-            onClicked: NotificationService.toggleRule("priority", group.gkey)
-        }
-        MaterialIconButton {
-            visible: group.gItems.length > 1
-            icon: group.expanded ? "expand_less" : "expand_more"
-            width: Theme.components.dp(30); height: width
-            onClicked: group.expanded = !group.expanded
-        }
-        MaterialIconButton {
-            icon: "close"
-            width: Theme.components.dp(30); height: width
-            onClicked: NotificationService.clearApp(group.gkey)
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.minimumWidth: 0
+                spacing: 0
+
+                ThemedText {
+                    Layout.fillWidth: true
+                    text: group.gkey
+                    style: Theme.type.labelLarge
+                    emphasized: true
+                    color: group.muted ? Theme.color.fgSurfaceVariant : Theme.color.fgSurface
+                    elide: Text.ElideRight
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.space.xs
+                    ThemedText {
+                        text: group.gUnread > 0
+                            ? Lang.tn("ui.notif.unreadCount", group.gUnread) + " · " + Lang.tn("ui.notif.total", group.gItems.length)
+                            : Lang.tn("ui.notif.total", group.gItems.length)
+                        style: Theme.type.labelSmall
+                        color: group.gUnread > 0 ? Theme.color.primary : Theme.color.fgSurfaceVariant
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        visible: group.muted
+                        text: "\ue04f"      // volume_off
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                        color: Theme.color.fgSurfaceVariant
+                    }
+                    Text {
+                        visible: group.priority
+                        text: "\ue838"      // star
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                        color: Theme.color.primary
+                    }
+                }
+            }
+
+            MaterialIconButton {
+                id: expandBtn
+                visible: group.multi
+                icon: group.expanded ? "expand_less" : "expand_more"
+                width: Theme.components.dp(30)
+                height: width
+                tooltip: ""
+                onClicked: group.expanded = !group.expanded
+            }
+
+            MaterialIconButton {
+                id: menuBtn
+                icon: "more_vert"
+                width: Theme.components.dp(30)
+                height: width
+                tooltip: Lang.t("ui.notif.moreActions")
+                onClicked: group.menuRequested(menuBtn, group.headerActions)
+            }
         }
     }
 
@@ -142,6 +221,7 @@ ColumnLayout {
                     id: card
                     width: parent.width
                     notif: slot.modelData
+                    selected: group.selectedItem === slot.modelData
                     expanded: group.expanded
                     topR: slot.index === 0 ? Theme.shape.cardLarge : Theme.shape.listInner
                     bottomR: slot.index === slot.lastShown ? Theme.shape.cardLarge : Theme.shape.listInner
@@ -152,6 +232,7 @@ ColumnLayout {
                         slot.leaving = true
                         leaveTimer.start()
                     }
+                    onMenuRequested: (anchor, actions) => group.menuRequested(anchor, actions)
                     Timer {
                         id: leaveTimer
                         interval: ThemeMotion.duration("morph") + 60

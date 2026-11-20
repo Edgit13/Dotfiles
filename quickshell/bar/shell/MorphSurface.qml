@@ -33,6 +33,16 @@ Item {
     property real compactHeight: 0
     property real hoverWidth: 0                  // > 0 вмикає hover-pill (compact → трохи ширший)
     property real hoverHeight: 0
+    // Наскільки «ядро» hover-контенту зсунуте від лівого краю hover-ряду.
+    // Тіло hover-пігулки зсувається на стільки ж, щоб ядро (workspaces/clock/live…)
+    // лишалося рівно під курсором, а додаткові модулі з'являлися обабіч.
+    property real hoverCoreInset: 0
+    // true = тримати hover-пілл розгорнутим, навіть коли курсор пішов (відкрите меню/оверлей від бару)
+    property bool holdHover: false
+    // true = hover-ряд показується ЗАВЖДИ в compact (коли hoverWidth > 0), а не підміняє compact-слот
+    // при наведенні. Ядро стоїть на тому ж місці, додаткові модулі лише «відкриваються» зростанням
+    // тіла (clip) — нічого не зникає, не з'являється заново і не їде з-під курсора.
+    property bool hoverPersistent: false
     property real expandedWidth: 0
     property real expandedHeight: 0
     property real dialogWidth: 0
@@ -54,6 +64,7 @@ Item {
 
     // стани взаємодії (readonly)
     readonly property bool hovered: hh.hovered
+    readonly property bool hoverActive: hovered || holdHover
     readonly property bool pressed: th.pressed
     readonly property bool focused: activeFocus
     readonly property real scrimOpacity: _scrim       // для хоста: Rectangle { color: scrim; opacity: surface.scrimOpacity }
@@ -67,7 +78,8 @@ Item {
     // морфу — це важка операція для композитора і саме вона давала «глючну» анімацію та
     // артефакти-двійники по краях. Тепер вікно один раз стрибає до фінального розміру в момент
     // зміни стану, а сам контент плавно анімується вже всередині вже готового по розміру вікна.
-    readonly property real _targetX: (width - _tw) * originX
+    readonly property real _targetShift: _hoverPill ? ((_hw - _cw) / 2 - hoverCoreInset) : 0
+    readonly property real _targetX: (width - _tw) * originX + _targetShift
     readonly property real _targetY: (height - _th) * originY
     readonly property real overflowTop:    Math.max(0, -_targetY)
     readonly property real overflowLeft:   Math.max(0, -_targetX)
@@ -101,13 +113,13 @@ Item {
         _closing = r < _rank
         _rank = r
         _st = surfaceState
-        _hov = _st === "compact" && hovered
+        _hov = _st === "compact" && hoverActive
         if (_st === "dialog") _centerDialog(); else { _dx = 0; _dy = 0 }
         if (_st === "dialog" || _st === "expanded") forceActiveFocus()
     }
-    onHoveredChanged: {
-        if (_st === "compact") _closing = !hovered
-        _hov = _st === "compact" && hovered
+    onHoverActiveChanged: {
+        if (_st === "compact") _closing = !hoverActive
+        _hov = _st === "compact" && hoverActive
     }
     Component.onCompleted: { _rank = _rankOf(surfaceState); _st = surfaceState; _cs = _st; _chov = false }
 
@@ -122,13 +134,14 @@ Item {
         interval: Math.max(1, ThemeMotion.duration("contentOut") + 20)
         onTriggered: { root._cs = root._st; root._chov = root._hoverPill }
     }
+    readonly property bool _persistHover: hoverPersistent && hoverWidth > 0
     function _syncContent() {
-        if (_cs === _st && _chov === _hoverPill) { contentGate.stop(); return }
+        if (_cs === _st && (_persistHover || _chov === _hoverPill)) { contentGate.stop(); return }
         _cs = "none"; _chov = false
         contentGate.restart()
     }
     on_StChanged: _syncContent()
-    on_HoverPillChanged: _syncContent()
+    on_HoverPillChanged: if (!_persistHover) _syncContent()
     // решта паузи входу (базова пауза слота мінус те, що вже відсиділа затримка гейта)
     readonly property int _enterDelay: Math.max(0, Math.round(ThemeMotion.duration("morphIn") * 0.35) - contentGate.interval)
 
@@ -145,6 +158,13 @@ Item {
     readonly property real _dh: dialogHeight > 0 ? dialogHeight : Math.max(_eh, dialogSlot.childrenRect.height + dialogPadding * 2)
 
     readonly property bool _hoverPill: _st === "compact" && _hov && hoverWidth > 0
+    // зсув, що тримає тіло так, щоб hover-ряд помістився в ньому (0 у всіх інших станах)
+    property real _hoverShift: _hoverPill ? ((_hw - _cw) / 2 - hoverCoreInset) : 0
+    Behavior on _hoverShift { MotionAnimation { role: root._sizeRole } }
+    // Компенсація для hover-ряду: поки тіло росте/зсувається, ряд лишається на місці,
+    // тож ядро (workspaces/clock/live…) не «уїжджає» з-під курсора ні на вході, ні на виході.
+    readonly property real hoverContentShift: hoverWidth > 0
+        ? (((_hw - _cw) / 2 - hoverCoreInset) - _hoverShift) : 0
 
     // цільова геометрія тіла
     readonly property real _tw: _st === "closed" ? _cw * 0.6
@@ -200,7 +220,7 @@ Item {
         id: body
         width: root._tw
         height: root._th
-        x: (root.width - width) * root.originX + root._dx
+        x: (root.width - width) * root.originX + root._dx + root._hoverShift
         y: (root.height - height) * root.originY + root._dy
         opacity: root._opacity
         scale: root._scale
@@ -251,7 +271,8 @@ Item {
                 enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.padding
-                shown: (root._cs === "compact" && !root._chov) || root._cs === "closed"
+                shiftX: -root._hoverShift   // компактний рядок не їде разом зі зсувом тіла
+                shown: (root._cs === "compact" && !root._chov && !root._persistHover) || root._cs === "closed"
                 slotWidth: root._cw - root.padding * 2
                 slotHeight: root._ch
             }
@@ -261,7 +282,8 @@ Item {
                 enterDelay: root._enterDelay
                 originX: root.originX; originY: root.originY
                 padX: root.padding
-                shown: root._cs === "compact" && root._chov
+                shiftX: root.hoverContentShift
+                shown: root._cs === "compact" && (root._chov || root._persistHover)
                 slotWidth: root._hw - root.padding * 2
                 slotHeight: root._hh
             }

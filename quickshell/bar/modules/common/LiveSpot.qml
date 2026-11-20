@@ -24,38 +24,10 @@ BarModule {
     readonly property bool motion: Theme.motion.enabled && !Theme.motion.reduced
     readonly property bool liveOn: Settings.get("bar", "live") !== false
 
-    // ── сповіщення: власний відлік, не залежить від попапів ──
-    property var notifItem: null
-    property int _lastCount: 0
+    // ── сповіщення: стан і відлік живе в NotificationService ──
+    // Тож compact- і hover-пігулка показують ту саму подію, а hover не «з'їдає» капсулу.
+    readonly property var notifItem: NotificationService.liveItem
     readonly property bool notifVisible: root.notifItem !== null && !NotificationService.centerOpen
-
-    Connections {
-        target: NotificationService
-        function onItemsChanged() {
-            const n = NotificationService.count
-            const grew = n >= root._lastCount
-            root._lastCount = n
-            if (root.notifItem && NotificationService.items.indexOf(root.notifItem) < 0)
-                root.notifItem = null
-            if (!grew) return
-            const it = NotificationService.items[0]
-            if (!it || it.restored || it === root.notifItem) return
-            // відновлені після reload сповіщення не мають раптом з'являтися в пігулці
-            if (Date.now() - it.time.getTime() > 5000) return
-            if (!NotificationService.masterPopups || !NotificationService.barLive) return
-            if (NotificationService.centerOpen) return
-            if (NotificationService.appMuted(it) && it.urgency !== 2) return
-            if (NotificationService.dnd && it.urgency !== 2 && !NotificationService.isPriority(it)) return
-            root.notifItem = it
-            dwell.restart()
-        }
-    }
-
-    Timer {
-        id: dwell
-        interval: Math.max(4000, NotificationService.timeoutNormal * 1000)
-        onTriggered: root.notifItem = null
-    }
 
     // ── таймер: показуємо, коли до спрацювання менше 30 хвилин ──
     property double now: Date.now()

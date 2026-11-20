@@ -297,6 +297,9 @@ Singleton {
             // ───────── інтерфейс ─────────
             "ui.surface.launcher":  "Застосунки",
             "tray.menu.empty":      "Порожнє меню",
+            "tray.hide":            "Сховати з бару",
+            "tray.show":            "Показувати в барі",
+            "tray.more":            "Приховані значки",
             "ui.surface.wallpaper": "Шпалери",
             "ui.launcher.search": "Пошук застосунків…",
             "launcher.search.calc":    "Вираз…",
@@ -703,6 +706,7 @@ Singleton {
             "ui.notif.unblockApp": "Розблокувати застосунок",
             "ui.notif.blocked":    "Заблоковані",
             "ui.notif.priorityApp":"Показувати навіть у «Не турбувати»",
+            "ui.notif.priorityShort":"Показувати в «Не турбувати»",
             "ui.notif.unpriorityApp": "Прибрати пріоритет",
             "ui.notif.copy":       "Копіювати",
             "ui.notif.copied":     "Скопійовано",
@@ -712,9 +716,12 @@ Singleton {
             "ui.notif.noResults":  "Нічого не знайдено",
             "ui.notif.unreadCount":"{n} непрочитаних",
             "ui.notif.total":      "{n} усього",
+            "ui.notif.showing":    "{n} із {m}",
             "ui.notif.pinnedTag":  "Закріплено",
             "ui.notif.snoozed":    "Відкладено",
             "ui.notif.remove":     "Прибрати",
+            "ui.notif.moreActions":"Більше",
+            "ui.notif.keys":       "↑↓ вибір · Enter дія · Del прибрати",
 
             "ui.osd.mute":         "Без звуку",
 
@@ -1336,6 +1343,9 @@ Singleton {
 
             "ui.surface.launcher":  "Applications",
             "tray.menu.empty":      "Empty menu",
+            "tray.hide":            "Hide from bar",
+            "tray.show":            "Show in bar",
+            "tray.more":            "Hidden icons",
             "ui.surface.wallpaper": "Wallpapers",
             "ui.launcher.search": "Type to search",
             "launcher.search.calc":    "Expression…",
@@ -1742,6 +1752,7 @@ Singleton {
             "ui.notif.unblockApp": "Unblock app",
             "ui.notif.blocked":    "Blocked",
             "ui.notif.priorityApp":"Always show, even in Do not disturb",
+            "ui.notif.priorityShort":"Always show in DND",
             "ui.notif.unpriorityApp": "Remove priority",
             "ui.notif.copy":       "Copy",
             "ui.notif.copied":     "Copied",
@@ -1751,9 +1762,12 @@ Singleton {
             "ui.notif.noResults":  "Nothing found",
             "ui.notif.unreadCount":"{n} unread",
             "ui.notif.total":      "{n} total",
+            "ui.notif.showing":    "{n} of {m}",
             "ui.notif.pinnedTag":  "Pinned",
             "ui.notif.snoozed":    "Snoozed",
             "ui.notif.remove":     "Dismiss",
+            "ui.notif.moreActions":"More",
+            "ui.notif.keys":       "↑↓ select · Enter open · Del dismiss",
 
             "ui.osd.mute":         "Muted",
 

@@ -26,6 +26,29 @@ Singleton {
     signal toggleTasksRequested()
     signal closeTasksRequested()
 
+    // ── утримання hover-пілла ──
+    // Поки відкрите контекст-меню трея, overflow-панель чи інший оверлей від бару, курсор «виходить» з
+    // пілла на оверлей — без утримання пілл би згортався просто під відкритим меню.
+    // Оверлей реєструється: setHold(унікальний ключ, true/false, ім'я монітора).
+    property var _holds: ({})
+    property int holdRev: 0
+    function setHold(key, on, monitor) {
+        const has = _holds[key] !== undefined
+        if (on) {
+            if (has && _holds[key] === (monitor || "")) return
+            _holds[key] = monitor || ""
+        } else {
+            if (!has) return
+            delete _holds[key]
+        }
+        holdRev++
+    }
+    function heldOn(monitor) {
+        holdRev   // залежність для біндінгів
+        for (const k in _holds) if (_holds[k] === "" || _holds[k] === monitor) return true
+        return false
+    }
+
     // монітор, на якому відкривати: явний (клік по бару) → інакше той, що у фокусі (хоткей/IPC)
     function resolveMonitor(monitor) { return monitor || MangoService.focusedMonitor }
 

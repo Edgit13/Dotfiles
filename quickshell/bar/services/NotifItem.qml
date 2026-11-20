@@ -43,7 +43,12 @@ Scope {
         nid = raw.id
         appName = raw.appName || ""
         appIcon = raw.appIcon || ""
-        image = raw.image || ""
+        // Quickshell загортає image-path у "image://icon/" (навіть абсолютний шлях),
+        // тому знімаємо префікс: далі це або шлях до фото, або ім'я іконки теми.
+        let im = String(raw.image || "")
+        if (im.indexOf("image://icon/") === 0)
+            im = im.substring("image://icon/".length)
+        image = im
         desktopEntry = raw.desktopEntry || ""
         summary = raw.summary || ""
         body = raw.body || ""

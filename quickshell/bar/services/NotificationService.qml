@@ -57,6 +57,55 @@ Singleton {
     readonly property int hiddenPopupCount: Math.max(0, popupQueue.length - maxVisible)
     readonly property var groups: appGroups("all", "")
 
+    // ---- жива капсула (bar.style = pill) ----
+    // Стан живе тут, а не в кожному екземплярі LiveSpot: compact- і hover-пігулка
+    // показують ту саму подію, і капсула не зникає при переході між ними.
+    property var liveItem: null
+    property bool livePaused: false
+    property bool _liveHovered: false
+    property double _liveDeadline: 0
+    property real _liveRemain: 0
+
+    function _clearLive() {
+        liveItem = null
+        livePaused = false
+        _liveRemain = 0
+        liveTimer.stop()
+    }
+    function _showLive(it, ms) {
+        if (!it) { _clearLive(); return }
+        liveItem = it
+        _liveRemain = Math.max(0, Number(ms) || 0)
+        _liveDeadline = Date.now() + _liveRemain
+        // якщо курсор уже на пігулці — нова капсула теж одразу на паузі
+        livePaused = _liveHovered
+        _syncLiveTimer()
+    }
+    // пауза, поки курсор на пігулці: таймер не «доїдає» капсулу під час hover
+    function setLivePaused(v) {
+        v = !!v
+        _liveHovered = v
+        if (!liveItem) { livePaused = false; return }
+        if (v === livePaused) return
+        const now = Date.now()
+        if (v) _liveRemain = Math.max(0, _liveDeadline - now)
+        else _liveDeadline = now + _liveRemain
+        livePaused = v
+        _syncLiveTimer()
+    }
+    function _syncLiveTimer() {
+        if (!liveItem || livePaused) { liveTimer.stop(); return }
+        const left = _liveDeadline - Date.now()
+        if (left <= 0) { _clearLive(); return }
+        liveTimer.interval = Math.max(1, left)
+        liveTimer.restart()
+    }
+    Timer {
+        id: liveTimer
+        repeat: false
+        onTriggered: root._syncLiveTimer()
+    }
+
     // ---- muted apps ----
     function isAppMuted(key) { return (mutedApps || []).indexOf(key) >= 0 }
     function muteApp(key) {
@@ -72,6 +121,16 @@ Singleton {
     function toggleMuteApp(key) { isAppMuted(key) ? unmuteApp(key) : muteApp(key) }
     function appKey(it) { return it ? (it.appName || it.desktopEntry || "—") : "—" }
     function appMuted(it) { return isAppMuted(appKey(it)) }
+
+    // image-path у D-Bus може бути як шляхом до фото, так і іменем іконки ("telegram").
+    // Фото — це абсолютний шлях або URL; усе інше — ім'я іконки теми.
+    function isImageSource(v) {
+        const s = String(v || "").trim()
+        if (s === "") return false
+        if (s.charAt(0) === "/") return true
+        return /^(file|data|qrc|https?):/i.test(s)
+    }
+    function imageSource(it) { return it && isImageSource(it.image) ? String(it.image) : "" }
 
     // ---- правила сповіщень ----
     // blocked  — не показувати й не зберігати взагалі
@@ -163,6 +222,10 @@ Singleton {
     // ---- прочитане / закріплене / відкладене ----
     function markRead(it, value) { if (it) it.read = value !== false }
     function markAllRead() { for (let i = 0; i < items.length; i++) items[i].read = true }
+    function markAppRead(key) {
+        for (let i = 0; i < items.length; i++)
+            if (appKey(items[i]) === key) items[i].read = true
+    }
     function togglePin(it) {
         if (!it) return
         it.pinned = !it.pinned
@@ -215,6 +278,7 @@ Singleton {
         // фіксуємо монітор на момент відкриття: фокус може змінитися, а центр не має «стрибати»
         centerMonitor = _targetMonitor()
         for (let i = 0; i < items.length; i++) items[i].popup = false
+        _clearLive()
         centerOpen = true
     }
     function closeCenter() { centerOpen = false }
@@ -271,10 +335,12 @@ Singleton {
             if (idx < 0) break
             const old = arr[idx]
             arr.splice(idx, 1)
+            if (liveItem === old) _clearLive()
             old.close()
             old.destroy(1500)
         }
         items = arr
+        if (allowed && barLive) _showLive(it, _timeoutFor(it) || 10000)
     }
 
     function _rearm(it) {
@@ -288,6 +354,7 @@ Singleton {
     function _remove(it, notifyApp) {
         if (items.indexOf(it) < 0) return
         items = items.filter(x => x !== it)
+        if (liveItem === it) _clearLive()
         if (notifyApp) it.close()
         it.popup = false
         it.destroy(1500)
@@ -295,21 +362,36 @@ Singleton {
 
     // ---- дії ----
     function dismiss(it) { _remove(it, true) }
-    function hidePopup(it) { it.popup = false }
+    function hidePopup(it) {
+        it.popup = false
+        if (liveItem === it) _clearLive()
+    }
     function activate(it, id) { it.invoke(id); markRead(it); _remove(it, true) }
+    // Enter у центрі: дія за замовчуванням, інакше перше посилання в тексті,
+    // інакше просто позначити прочитаним.
+    function activateItem(it) {
+        if (!it) return
+        markRead(it)
+        if (it.hasDefault()) { activate(it, "default"); return }
+        const m = String(it.body || "").match(/https?:\/\/[^\s<>"']+/)
+        if (m) Qt.openUrlExternally(m[0])
+    }
     function clearAll(includePinned) {
         const all = includePinned ? items : items.filter(i => !i.pinned)
         items = includePinned ? [] : items.filter(i => i.pinned)
+        if (liveItem && all.indexOf(liveItem) >= 0) _clearLive()
         for (let i = 0; i < all.length; i++) { all[i].close(); all[i].destroy(1500) }
     }
     function clearRead() {
         const gone = items.filter(i => i.read && !i.pinned)
         items = items.filter(i => !(i.read && !i.pinned))
+        if (liveItem && gone.indexOf(liveItem) >= 0) _clearLive()
         for (let i = 0; i < gone.length; i++) { gone[i].close(); gone[i].destroy(1500) }
     }
     function clearApp(key) {
         const gone = items.filter(i => appKey(i) === key && !i.pinned)
         items = items.filter(i => !(appKey(i) === key && !i.pinned))
+        if (liveItem && gone.indexOf(liveItem) >= 0) _clearLive()
         for (let i = 0; i < gone.length; i++) { gone[i].close(); gone[i].destroy(1500) }
     }
 

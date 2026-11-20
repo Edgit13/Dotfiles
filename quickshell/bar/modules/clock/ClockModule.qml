@@ -42,8 +42,16 @@ BarModule {
             visible: !root.vertical
             anchors.centerIn: parent
             spacing: Theme.space.xs
+            TextMetrics {
+                id: timeMetrics
+                font: timeText.font
+                text: root.timeStr.replace(/\d/g, "0")
+            }
             ThemedText {
+                id: timeText
                 anchors.verticalCenter: parent.verticalCenter
+                width: Math.ceil(timeMetrics.width)
+                horizontalAlignment: Text.AlignHCenter
                 text: root.timeStr
                 style: Theme.type.clockBar
                 emphasized: !Theme.settings.nothing

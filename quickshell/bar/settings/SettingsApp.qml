@@ -91,6 +91,9 @@ Item {
     onCurrentIndexChanged: {
         pageIn.restart()
         ensureNavVisible(currentIndex)
+        // Кожна сторінка починається згори: інакше прокрутка попереднього
+        // розділу лишається і ховає перші поля (напр. режим нічної гами).
+        if (flick) flick.contentY = 0
     }
 
     function ensureNavVisible(idx: int): void {

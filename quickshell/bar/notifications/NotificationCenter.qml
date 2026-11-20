@@ -29,12 +29,78 @@ PanelWindow {
     // стан центру
     property string filter: "all"      // all | unread | pinned
     property string query: ""
+    property var selected: null        // вибір з клавіатури (NotifItem)
+    property bool menuOpen: false
     readonly property var shownGroups: NotificationService.appGroups(win.filter, win.query)
+    // плоский список у тому ж порядку, що й на екрані (група → її картки)
+    readonly property var flatItems: {
+        const out = []
+        const gs = win.shownGroups
+        for (let i = 0; i < gs.length; i++) {
+            const its = gs[i].items || []
+            for (let j = 0; j < its.length; j++) out.push(its[j])
+        }
+        return out
+    }
     readonly property int readCount: NotificationService.items.filter(i => i.read).length
     readonly property string emptyMsg: win.query !== "" ? Lang.t("ui.notif.noResults")
         : win.filter === "unread" ? Lang.t("ui.notif.noUnread")
         : win.filter === "pinned" ? Lang.t("ui.notif.noPinned")
         : Lang.t("ui.notif.empty")
+
+    readonly property var headerActions: {
+        const list = []
+        if (NotificationService.unreadCount > 0)
+            list.push({ icon: "done_all", label: Lang.t("ui.notif.markAllRead"),
+                        run: function () { NotificationService.markAllRead() } })
+        if (win.readCount > 0)
+            list.push({ icon: "delete_sweep", label: Lang.t("ui.notif.clearRead"),
+                        run: function () { NotificationService.clearRead() } })
+        if (NotificationService.count > 0)
+            list.push({ icon: "close", label: Lang.t("ui.notif.clear"), danger: true,
+                        run: function () { NotificationService.clearAll() } })
+        return list
+    }
+
+    function openMenu(anchor, actions) {
+        if (!anchor || !actions || actions.length === 0) return
+        win.menuOpen = true
+        menu.show(anchor, actions)
+    }
+    function closeMenu() {
+        menu.close()
+    }
+    function resetSelection() {
+        win.selected = win.flatItems.length > 0 ? win.flatItems[0] : null
+    }
+    function syncSelection() {
+        if (!win.open) return
+        if (!win.selected || win.flatItems.indexOf(win.selected) < 0) resetSelection()
+    }
+    function moveSelection(delta) {
+        const list = win.flatItems
+        if (list.length === 0) { win.selected = null; return }
+        let i = list.indexOf(win.selected)
+        if (i < 0) i = delta > 0 ? 0 : list.length - 1
+        else i = Math.max(0, Math.min(list.length - 1, i + delta))
+        win.selected = list[i]
+    }
+    function activateSelected() {
+        if (!win.selected) return
+        NotificationService.activateItem(win.selected)
+    }
+    function snoozeSelected() {
+        if (win.selected) NotificationService.snooze(win.selected)
+    }
+    function togglePinSelected() {
+        if (win.selected) NotificationService.togglePin(win.selected)
+    }
+    function copySelected() {
+        if (win.selected) NotificationService.copy(win.selected)
+    }
+    function dismissSelected() {
+        if (win.selected) NotificationService.dismiss(win.selected)
+    }
 
     // компактна картка, як інші модулі: висота за вмістом, не на весь екран
     readonly property real maxPanelH: win.screen.height - win.m * 2
@@ -70,11 +136,24 @@ PanelWindow {
     WlrLayershell.keyboardFocus: win.open ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
     onOpenChanged: {
-        if (!open) return
+        if (!win.open) {
+            win.closeMenu()
+            win.selected = null
+            return
+        }
         win.filter = "all"
         win.query = ""
         searchInput.text = ""
+        win.resetSelection()
         panel.forceActiveFocus()
+    }
+    onShownGroupsChanged: Qt.callLater(win.syncSelection)
+    onFilterChanged: Qt.callLater(win.resetSelection)
+    onQueryChanged: Qt.callLater(win.syncSelection)
+
+    Connections {
+        target: NotificationService
+        function onItemsChanged() { Qt.callLater(win.syncSelection) }
     }
 
     Rectangle {
@@ -104,9 +183,55 @@ PanelWindow {
         Behavior on scale { MotionAnimation { role: win.open ? "move" : "exit" } }
 
         focus: true
-        Keys.onEscapePressed: NotificationService.closeCenter()
+        Keys.onEscapePressed: {
+            if (win.menuOpen) { win.closeMenu(); return }
+            if (win.query !== "") {
+                searchInput.text = ""
+                win.query = ""
+                searchInput.forceActiveFocus()
+                return
+            }
+            NotificationService.closeCenter()
+        }
         Keys.onPressed: function (e) {
-            if (e.key === Qt.Key_Slash) { searchInput.forceActiveFocus(); e.accepted = true }
+            if (e.key === Qt.Key_Escape) return
+            if (win.menuOpen) return
+            if (e.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier)) return
+            switch (e.key) {
+            case Qt.Key_Slash:
+                searchInput.forceActiveFocus()
+                e.accepted = true
+                break
+            case Qt.Key_Up:
+                win.moveSelection(-1)
+                e.accepted = true
+                break
+            case Qt.Key_Down:
+                win.moveSelection(1)
+                e.accepted = true
+                break
+            case Qt.Key_Return:
+            case Qt.Key_Enter:
+                win.activateSelected()
+                e.accepted = true
+                break
+            case Qt.Key_Delete:
+                win.dismissSelected()
+                e.accepted = true
+                break
+            case Qt.Key_P:
+                win.togglePinSelected()
+                e.accepted = true
+                break
+            case Qt.Key_S:
+                win.snoozeSelected()
+                e.accepted = true
+                break
+            case Qt.Key_C:
+                win.copySelected()
+                e.accepted = true
+                break
+            }
         }
 
         ColumnLayout {
@@ -130,43 +255,53 @@ PanelWindow {
                 spacing: Theme.space.sm
 
                 Rectangle {
-                    implicitWidth: Theme.components.dp(36)
+                    implicitWidth: Theme.components.dp(40)
                     implicitHeight: implicitWidth
                     radius: Theme.shape.radius("lg", height)
-                    color: Theme.color.primaryContainer
+                    color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
+                    border.width: Theme.settings.nothing ? 1 : 0
+                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.25)
                     Text {
                         anchors.centerIn: parent
-                        text: "\ue7f4"
-                        font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                        color: Theme.color.fgPrimaryContainer
+                        text: NotificationService.dnd ? "\ue7f6" : "\ue7f4"
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
+                        color: Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgPrimaryContainer
                     }
+                    Behavior on color { MotionColorAnimation { role: "stateChange" } }
                 }
-                ThemedText {
+
+                ColumnLayout {
                     Layout.fillWidth: true
                     Layout.minimumWidth: 0
                     Layout.preferredWidth: 0
-                    text: Lang.t("ui.notif.title")
-                    style: Theme.type.titleMedium
-                    emphasized: true
-                    elide: Text.ElideRight
-                }
-                Rectangle {
-                    visible: NotificationService.unreadCount > 0
-                    implicitWidth: unreadHeader.implicitWidth + Theme.space.md
-                    implicitHeight: Theme.components.dp(20)
-                    radius: height / 2
-                    color: Theme.settings.nothing ? "transparent" : Theme.color.errorContainer
-                    border.width: Theme.settings.nothing ? 1 : 0
-                    border.color: Theme.color.error
+                    spacing: 0
+
                     ThemedText {
-                        id: unreadHeader
-                        anchors.centerIn: parent
-                        text: NotificationService.unreadCount
-                        style: Theme.type.labelMedium
+                        Layout.fillWidth: true
+                        text: Lang.t("ui.notif.title")
+                        style: Theme.type.titleMedium
                         emphasized: true
-                        color: Theme.color.fgErrorContainer
+                        elide: Text.ElideRight
+                    }
+                    ThemedText {
+                        Layout.fillWidth: true
+                        text: {
+                            const shown = win.flatItems.length
+                            const total = NotificationService.count
+                            if (win.query !== "" || win.filter !== "all")
+                                return Lang.t("ui.notif.showing").replace("{n}", shown).replace("{m}", total)
+                            if (total === 0) return Lang.t("ui.notif.empty")
+                            if (NotificationService.unreadCount > 0)
+                                return Lang.tn("ui.notif.unreadCount", NotificationService.unreadCount)
+                                     + " · " + Lang.tn("ui.notif.total", total)
+                            return Lang.tn("ui.notif.total", total)
+                        }
+                        style: Theme.type.labelSmall
+                        color: NotificationService.unreadCount > 0 ? Theme.color.primary : Theme.color.fgSurfaceVariant
+                        elide: Text.ElideRight
                     }
                 }
+
                 MaterialIconButton {
                     visible: NotificationService.unreadCount > 0
                     icon: "done_all"
@@ -175,13 +310,13 @@ PanelWindow {
                     height: width
                     onClicked: NotificationService.markAllRead()
                 }
-                MaterialButton {
-                    visible: NotificationService.count > 0
-                    text: Lang.t("ui.notif.clear")
-                    icon: "delete_sweep"
-                    style: "tonal"
-                    implicitHeight: Theme.components.buttonXS
-                    onClicked: NotificationService.clearAll()
+                MaterialIconButton {
+                    id: headerMenuBtn
+                    icon: "more_vert"
+                    tooltip: Lang.t("ui.notif.moreActions")
+                    width: Theme.components.dp(34)
+                    height: width
+                    onClicked: win.openMenu(headerMenuBtn, win.headerActions)
                 }
                 MaterialIconButton {
                     icon: "close"
@@ -391,7 +526,12 @@ PanelWindow {
                             model: ScriptModel {
                                 values: win.shownGroups
                             }
-                            NotificationGroup {}
+                            NotificationGroup {
+                                active: win.open
+                                stackIndex: index
+                                selectedItem: win.selected
+                                onMenuRequested: (anchor, actions) => win.openMenu(anchor, actions)
+                            }
                         }
                     }
                 }
@@ -446,15 +586,28 @@ PanelWindow {
                     style: Theme.type.labelSmall
                     color: Theme.color.fgSurfaceVariant
                 }
-                MaterialButton {
-                    visible: win.readCount > 0
-                    text: Lang.t("ui.notif.clearRead")
-                    icon: "done_all"
-                    style: "text"
-                    implicitHeight: Theme.components.buttonXS
-                    onClicked: NotificationService.clearRead()
+                ThemedText {
+                    visible: win.shownGroups.length > 0
+                    text: Lang.t("ui.notif.keys")
+                    style: Theme.type.labelSmall
+                    color: Theme.color.fgSurfaceVariant
+                    opacity: 0.75
                 }
             }
+        }
+
+        // ---- меню «⋮» ----
+        MouseArea {
+            anchors.fill: parent
+            visible: win.menuOpen
+            enabled: win.menuOpen
+            z: 900
+            onClicked: win.closeMenu()
+            onWheel: wheel => { wheel.accepted = true }
+        }
+        NotifMenu {
+            id: menu
+            onClosed: win.menuOpen = false
         }
     }
 

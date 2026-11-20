@@ -16,6 +16,8 @@ Item {
     property real originY: 0.5
     property real padX: 0
     property real padY: 0
+    // додатковий зсув контенту по X (для hover-ряду, що лишається на місці при рості тіла)
+    property real shiftX: 0
     // пауза перед проявою (мс); MorphSurface віднімає з неї затримку гейта
     property int enterDelay: Math.round(ThemeMotion.duration("morphIn") * 0.35)
 
@@ -26,7 +28,7 @@ Item {
     height: slotHeight
     // Контент тримається біля точки, що не рухається при рості тіла (origin), а не їде за його центром:
     // тіло «відкриває» контент, а не змітає його. У спокої (тіло = слот + padding) дає ту саму позицію, що й раніше.
-    x: host ? padX + (host.width  - width  - padX * 2) * originX : 0
+    x: host ? padX + (host.width  - width  - padX * 2) * originX + shiftX : 0
     y: host ? padY + (host.height - height - padY * 2) * originY : 0
     opacity: shown ? 1 : 0
     scale: shown ? 1.0 : _hiddenScale

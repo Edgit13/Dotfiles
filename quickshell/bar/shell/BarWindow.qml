@@ -122,7 +122,7 @@ PanelWindow {
     // ігровий режим + «плоский бар»: без заокруглень, зовнішніх відступів і тіні (лише повний бар)
     readonly property bool flat: !pill && !islands && GameModeState.active && GameModeState.optFlatBar
     readonly property int gap: (pill || islands) ? BarConfig.pillEdgeGap : (flat ? 0 : Theme.space.screenMargin)
-    readonly property int reserve: thickness + gap * 2
+    readonly property int reserve: (pill || islands) ? thickness + gap : thickness + gap * 2
     readonly property int cross: thickness - Theme.space.xs * 2
     readonly property int inner: cross - Theme.space.xxs * 2
 
@@ -148,6 +148,11 @@ PanelWindow {
         wallpaper: pWallpaper, clipboard: pClipboard, updates: pUpdates, diagnostics: pDiagnostics, binds: pBinds, resources: pResources
     })
     readonly property bool dashOpen: dashboardSurface.occupies
+
+    // Поки курсор на пігулці, не перецентровуємо її при зміні ширини (напр. прийшло
+    // сповіщення й жива капсула стала ширшою) — інакше модуль під курсором «уїжджає».
+    property bool _pillAnchor: false
+    property real _pillAnchorX: 0
 
     // Наскільки compact-«коробка» морф-модуля виступає за reserve. barMorph/island-морфи стартують
     // біля внутрішнього краю смуги (reserve - gap) і мають власну compact-висоту, тож їхнє
@@ -782,9 +787,10 @@ PanelWindow {
         Behavior on scale { MotionAnimation { role: "morph" } }
 
         x: win.vertical ? (win.position === "right" ? win.width - win.gap - win.thickness : win.gap)
-                        : Math.round((win.width - width) / 2)
+                        : (win._pillAnchor ? win._pillAnchorX : Math.round((win.width - width) / 2))
         y: win.vertical ? Math.round((win.height - height) / 2)
                         : (win.position === "bottom" ? win.height - win.gap - win.thickness : win.gap)
+        Behavior on x { MotionAnimation { role: "move" } }
 
         property string activePanel: ""
 
@@ -805,8 +811,33 @@ PanelWindow {
         compactWidth: compactRow.implicitWidth + Theme.space.lg * 2
         compactHeight: win.thickness
 
-        hoverWidth: BarConfig.pillHover ? hoverRow.implicitWidth + Theme.space.lg * 2 : 0
+        // на вузькому екрані hover-рядок не вміщається — лишаємо компактну пігулку,
+        // інакше капсулу обрізало б по краях екрана
+        readonly property real _hoverW: hoverRow.implicitWidth + Theme.space.lg * 2
+        readonly property real _rawInset: hoverExtraLeft.implicitWidth + hoverRow.spacing
+        // де буде пілл у compact (ядро стоїть на місці) — перевіряємо, що розгорнутий не вилізе за екран
+        readonly property real _pillX: win._pillAnchor ? win._pillAnchorX : Math.round((win.width - compactWidth) / 2)
+        readonly property bool _hoverFits: {
+            if (!screen) return false
+            const left = _pillX - _rawInset
+            return left >= win.gap && left + _hoverW <= win.width - win.gap
+        }
+        hoverWidth: BarConfig.pillHover && _hoverFits ? _hoverW : 0
         hoverHeight: win.thickness
+        hoverPersistent: true
+        holdHover: ShellState.heldOn(win.monitorName)
+        // тримаємо ядро (workspaces/clock/live…) на місці: додаткові модулі з'являються обабіч
+        hoverCoreInset: _rawInset
+
+        // поки курсор на пігулці — жива капсула не зникає і пігулка не перецентровується
+        onHoveredChanged: {
+            NotificationService.setLivePaused(hovered)
+            if (win.vertical) return
+            if (hovered) { win._pillAnchorX = pillSurface.x; win._pillAnchor = true }
+            else if (!holdHover) win._pillAnchor = false
+        }
+        // меню закрилось, а курсор не на пілі — відпускаємо якір і даємо пілу згорнутись
+        onHoldHoverChanged: if (!holdHover && !hovered) win._pillAnchor = false
 
         expandedWidth: {
             if (activePanel === "dashboard") return Math.min(920, screen.width - win.gap * 4)
@@ -874,109 +905,137 @@ PanelWindow {
                 anchors.centerIn: parent
                 spacing: Theme.space.sm
 
-                LauncherModule {
+                // ── додаткові модулі ліворуч ──
+                RowLayout {
+                    id: hoverExtraLeft
+                    opacity: pillSurface.hoverActive ? 1 : 0
+                    Behavior on opacity { MotionAnimation { role: pillSurface.hoverActive ? "contentIn" : "contentOut" } }
                     Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("launcher")
-                    onActivated: win.openPanel("launcher")
+                    spacing: Theme.space.sm
+
+                    LauncherModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("launcher")
+                        onActivated: win.openPanel("launcher")
+                    }
+                    WindowModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        monitor: win.monitorName; cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("window") && !ReliefState.hidden("barmodules")
+                    }
+                    ResourcesModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("resources") && !ReliefState.hidden("barmodules")
+                        onResourcesRequested: win.openPanel("resources")
+                    }
+                    MediaModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("media") && !ReliefState.hidden("barmodules")
+                        onMediaRequested: win.openPanel("media")
+                    }
                 }
-                WindowModule {
+
+                // ── ядро: той самий набір і порядок, що й у compact,
+                //    щоб при hover-розгортанні модулі не зсувалися з-під курсора ──
+                RowLayout {
+                    id: hoverCore
                     Layout.alignment: Qt.AlignVCenter
-                    monitor: win.monitorName; cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("window") && !ReliefState.hidden("barmodules")
+                    spacing: Theme.space.md
+
+                    WorkspaceStrip {
+                        Layout.alignment: Qt.AlignVCenter
+                        monitor: win.monitorName; itemSize: win.inner; compact: true
+                        visible: BarConfig.moduleEnabled("workspaces")
+                    }
+                    ClockModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("clock")
+                        onClicked: win.openPanel("dashboard")
+                    }
+                    LiveSpot {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        onMediaRequested: win.openPanel("media")
+                        onTimerRequested: win.openPanel("dashboard")
+                    }
+                    RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                    PrivacyModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("privacy")
+                    }
+                    GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
+                    NightLightModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("nightlight")
+                    }
+                    LanguageModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("language")
+                    }
                 }
-                WorkspaceStrip {
+
+                // ── додаткові модулі праворуч ──
+                RowLayout {
+                    id: hoverExtraRight
+                    opacity: pillSurface.hoverActive ? 1 : 0
+                    Behavior on opacity { MotionAnimation { role: pillSurface.hoverActive ? "contentIn" : "contentOut" } }
                     Layout.alignment: Qt.AlignVCenter
-                    monitor: win.monitorName; itemSize: win.inner; compact: true
-                    visible: BarConfig.moduleEnabled("workspaces")
-                }
-                ClockModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("clock")
-                    onClicked: win.openPanel("dashboard")
-                }
-                LiveSpot {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    onMediaRequested: win.openPanel("media")
-                    onTimerRequested: win.openPanel("dashboard")
-                }
-                ResourcesModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("resources") && !ReliefState.hidden("barmodules")
-                    onResourcesRequested: win.openPanel("resources")
-                }
-                MediaModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("media") && !ReliefState.hidden("barmodules")
-                    onMediaRequested: win.openPanel("media")
-                }
-                VolumeModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("mixer")
-                    onMixerRequested: win.openPanel("mixer")
-                    onStudioRequested: win.openPanel("audio")
-                }
-                NetworkModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("wifi")
-                    onWifiRequested: win.openPanel("wifi")
-                }
-                BluetoothModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("bluetooth")
-                    onBluetoothRequested: win.openPanel("bluetooth")
-                }
-                BatteryModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("battery")
-                }
-                TrayModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    placement: win.position
-                    enabledByConfig: BarConfig.moduleEnabled("tray")
-                }
-                NotificationModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("notifications")
-                }
-                RecordModule   { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
-                PrivacyModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("privacy")
-                }
-                GameModeModule { Layout.alignment: Qt.AlignVCenter; cross: win.inner }
-                NightLightModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("nightlight")
-                }
-                LanguageModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("language")
-                }
-                PluginBarItems {
-                    position: "sorted"
-                    vertical: false
-                    cross: win.inner
-                    layoutAlignment: Qt.AlignVCenter
-                }
-                PowerModule {
-                    Layout.alignment: Qt.AlignVCenter
-                    cross: win.inner
-                    enabledByConfig: BarConfig.moduleEnabled("power")
-                    onPowerRequested: win.openPanel("power")
+                    spacing: Theme.space.sm
+
+                    VolumeModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("mixer")
+                        onMixerRequested: win.openPanel("mixer")
+                        onStudioRequested: win.openPanel("audio")
+                    }
+                    NetworkModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("wifi")
+                        onWifiRequested: win.openPanel("wifi")
+                    }
+                    BluetoothModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("bluetooth")
+                        onBluetoothRequested: win.openPanel("bluetooth")
+                    }
+                    BatteryModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("battery")
+                    }
+                    TrayModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        placement: win.position
+                        enabledByConfig: BarConfig.moduleEnabled("tray")
+                    }
+                    NotificationModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("notifications")
+                    }
+                    PluginBarItems {
+                        position: "sorted"
+                        vertical: false
+                        cross: win.inner
+                        layoutAlignment: Qt.AlignVCenter
+                    }
+                    PowerModule {
+                        Layout.alignment: Qt.AlignVCenter
+                        cross: win.inner
+                        enabledByConfig: BarConfig.moduleEnabled("power")
+                        onPowerRequested: win.openPanel("power")
+                    }
                 }
             }
         ]

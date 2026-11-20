@@ -37,6 +37,15 @@ Singleton {
     readonly property int pillEdgeGap:        Math.max(0, Math.min(32, Math.round(Settings.get("bar", "pillEdgeGap") ?? 8)))
     readonly property bool pillCloseOnEscape: Settings.get("bar", "pillCloseOnEscape") !== false
     readonly property var perMonitor:  Settings.get("bar", "perMonitor") || ({})
+    // трей-іконки, сховані з бару (показуються в overflow-панелі за шевроном)
+    readonly property var trayHidden:  Settings.get("bar", "trayHidden") || []
+    function toggleTrayHidden(key) {
+        if (!key) return
+        const cur = trayHidden.slice()
+        const i = cur.indexOf(key)
+        if (i >= 0) cur.splice(i, 1); else cur.push(key)
+        Settings.set("bar", "trayHidden", cur)
+    }
     readonly property string mainMonitor: Settings.get("bar", "mainMonitor") || ""
 
     function _valid(v, list, fb) { return list.indexOf(v) >= 0 ? v : fb }

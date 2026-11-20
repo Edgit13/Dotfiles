@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import "root:/theme"
+import "root:/shell"
 import "root:/settings"
 import "root:/modules/common"
 import Quickshell
@@ -45,6 +46,11 @@ PanelWindow {
 
     signal menuDismissed()
 
+    // необов'язковий нижній пункт «Сховати з бару / Показувати в барі»
+    property string pinLabel: ""
+    property string pinIcon: "\ue8f5"      // visibility_off
+    signal pinClicked()
+
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
@@ -88,7 +94,13 @@ PanelWindow {
         if (_stack.length > 0) _stack = _stack.slice(0, -1)
     }
 
-    onShownChanged: if (shown) scope.forceActiveFocus()
+    // поки меню відкрите, пілл бару не згортається (див. ShellState.setHold)
+    readonly property string _holdKey: "traymenu-" + Math.random().toString(36).slice(2)
+    onShownChanged: {
+        if (shown) scope.forceActiveFocus()
+        ShellState.setHold(_holdKey, shown, root.screen ? root.screen.name : "")
+    }
+    Component.onDestruction: ShellState.setHold(_holdKey, false, "")
 
     onVisibleChanged: {
         if (visible) {
@@ -357,6 +369,65 @@ PanelWindow {
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // ── «Сховати з бару» / «Показувати в барі» ───────────
+                    Item {
+                        width: column.width
+                        height: root.pinLabel !== "" ? Theme.components.dp(9) : 0
+                        visible: height > 0
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.leftMargin: Theme.space.xs
+                            anchors.rightMargin: Theme.space.xs
+                            height: 1
+                            color: Theme.color.outlineVariant
+                        }
+                    }
+                    Rectangle {
+                        width: column.width
+                        height: root.pinLabel !== "" ? Theme.components.dp(36) : 0
+                        visible: height > 0
+                        radius: Theme.shape.listItem
+                        color: "transparent"
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.fgSurface,
+                                                    Theme.components.stateHover)
+                            opacity: pinMa.containsMouse ? 1 : 0
+                            Behavior on opacity { MotionAnimation { role: "hover" } }
+                        }
+                        BarIcon {
+                            id: pinGlyph
+                            anchors.left: parent.left
+                            anchors.leftMargin: Theme.space.sm
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.pinIcon
+                            size: Theme.components.dp(18)
+                            color: Theme.color.fgSurfaceVariant
+                        }
+                        ThemedText {
+                            anchors.left: pinGlyph.right
+                            anchors.leftMargin: Theme.space.sm
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.space.sm
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.pinLabel
+                            style: Theme.type.bodyMedium
+                            color: Theme.color.fgSurface
+                            elide: Text.ElideRight
+                        }
+                        MouseArea {
+                            id: pinMa
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: { root.pinClicked(); root.close() }
                         }
                     }
 
