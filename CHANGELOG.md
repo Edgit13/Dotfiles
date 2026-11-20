@@ -76,6 +76,15 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
   30 GB free disk. Below 4 GB the installer warns and caps build jobs at 2
   (`MAKEFLAGS`/`NINJAFLAGS`/`CARGO_BUILD_JOBS`), below 25 GB free it warns
   about disk.
+- Night light actually tints the screen again. `gammastep` was being started
+  with `-x` (reset mode), which never exits: every call left another orphan
+  holding the compositor's single gamma-control object, so all later attempts
+  got `failed` and the bar showed a temperature that was never applied.
+  `nightlight.py` now owns one long-lived `gammastep` instance (pid file plus a
+  private `-c` marker), restarts it only when the temperature really changes,
+  stops it when the filter is off, and reports a real error if the compositor
+  rejects gamma. Stale `gammastep -x` processes are cleaned up on apply.
+  `gammastep` was already in `install.sh`, so no new package is needed.
 - Settings no longer overwrites a hand-edited JSON config with the copy it read
   at startup: every write re-reads the file from disk first, the window
   refreshes all files when it opens, and a file that is temporarily invalid or

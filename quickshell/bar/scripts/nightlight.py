@@ -2,25 +2,36 @@
 """nightlight.py — Edots night light.
 
 Reads ~/.config/quickshell/nightlight.json (written by Settings) and applies
-the colour temperature with gammastep. One-shot: no long-running daemon.
+the colour temperature with gammastep.
+
+gammastep must keep running to hold the wlroots gamma-control object: when the
+process exits, the compositor restores the neutral ramp. We therefore manage a
+single long-lived instance (pid file + a private -c marker so we only ever
+touch our own processes) and restart it when the temperature changes.
 
   nightlight.py apply          apply the current config
   nightlight.py status         print the state file
   nightlight.py on|off|toggle  change enabled and apply
   nightlight.py temp 4000      set the manual temperature and apply
   nightlight.py mode manual|schedule
-  nightlight.py reset          restore the neutral temperature
+  nightlight.py reset          stop the daemon and restore neutral colour
 """
 import datetime
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import time
 
 CONF = os.path.expanduser("~/.config/quickshell/nightlight.json")
 STATE = os.path.expanduser("~/.cache/quickshell/nightlight.state")
+PID = os.path.expanduser("~/.cache/quickshell/nightlight.pid")
+LOG = os.path.expanduser("~/.cache/quickshell/nightlight.log")
+# Marker config file: its path ends up in the daemon cmdline, which lets us
+# find (and only kill) instances started by this script.
+MARK = os.path.expanduser("~/.cache/quickshell/nightlight-gammastep.conf")
 
 DEFAULTS = {
     "enabled": False,
@@ -119,40 +130,184 @@ def target_temp(cfg):
     return night
 
 
-def _gammastep(args):
-    if not shutil.which("gammastep"):
-        return 127
+def _argv(pid):
     try:
-        return subprocess.run(
-            ["gammastep", *args],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=8,
-        ).returncode
-    except (OSError, subprocess.TimeoutExpired):
-        return 1
+        with open(f"/proc/{pid}/cmdline", "rb") as fh:
+            raw = fh.read()
+    except OSError:
+        return []
+    return [part.decode("utf-8", "replace") for part in raw.split(b"\0") if part]
+
+
+def _cmdline(pid):
+    return " ".join(_argv(pid))
+
+
+def _scan(pattern):
+    """Return pids whose cmdline contains pattern."""
+    found = []
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return found
+    for entry in entries:
+        if not entry.isdigit() or int(entry) == os.getpid():
+            continue
+        if pattern in _cmdline(int(entry)):
+            found.append(int(entry))
+    return found
+
+
+def _ours(pid):
+    argv = _argv(pid)
+    if not argv:
+        return False
+    # A real gammastep is the first argv entry; a wrapper script is interpreted
+    # (`/bin/sh /path/to/gammastep ...`), so check the second entry too.
+    heads = [os.path.basename(arg) for arg in argv[:2]]
+    return "gammastep" in heads and MARK in argv
+
+
+def _read_pid():
+    try:
+        with open(PID, encoding="utf-8") as fh:
+            return int(fh.read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+def _running():
+    """Return (pid, temp) of our live daemon, or (0, 0)."""
+    pid = _read_pid()
+    if not pid or not _ours(pid):
+        return 0, 0
+    try:
+        with open(PID, encoding="utf-8") as fh:
+            parts = fh.read().split()
+        return pid, int(parts[1])
+    except (OSError, ValueError, IndexError):
+        return pid, 0
+
+
+def _terminate(pid):
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    deadline = time.time() + 2.0
+    while time.time() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        time.sleep(0.05)
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
+
+def stop():
+    """Stop our daemon(s); the compositor resets the gamma ramp on exit."""
+    pids = set(_scan(MARK))
+    pid = _read_pid()
+    if pid:
+        pids.add(pid)
+    for pid in pids:
+        if _ours(pid):
+            _terminate(pid)
+    # Legacy leftovers from the previous script: `gammastep -x` (reset mode)
+    # never exits and keeps the gamma-control object locked forever.
+    for pid in _scan("gammastep"):
+        argv = _argv(pid)
+        if argv and os.path.basename(argv[0]) in ("sh", "dash", "bash"):
+            argv = argv[1:]
+        if (len(argv) == 2 and os.path.basename(argv[0]) == "gammastep"
+                and argv[1] == "-x"):
+            _terminate(pid)
+    try:
+        os.unlink(PID)
+    except OSError:
+        pass
+
+
+def _read_log():
+    try:
+        with open(LOG, encoding="utf-8", errors="replace") as fh:
+            return fh.read()
+    except OSError:
+        return ""
+
+
+def start(temp):
+    """(Re)start one gammastep instance for temp. Returns (ok, error)."""
+    stop()
+    os.makedirs(os.path.dirname(MARK), exist_ok=True)
+    if not os.path.exists(MARK):
+        with open(MARK, "w", encoding="utf-8") as fh:
+            fh.write("[redshift]\n")
+
+    try:
+        with open(LOG, "w", encoding="utf-8") as log:
+            proc = subprocess.Popen(
+                ["gammastep", "-v", "-m", "wayland", "-c", MARK, "-O", str(temp)],
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+                close_fds=True,
+            )
+    except OSError as exc:
+        return False, f"gammastep failed to start: {exc}"
+
+    with open(PID, "w", encoding="utf-8") as fh:
+        fh.write(f"{proc.pid} {temp}\n")
+
+    # Wait for either the "ready" notice or a failure report, so the UI can
+    # show a real error instead of pretending the filter is active.
+    deadline = time.time() + 1.5
+    while time.time() < deadline:
+        text = _read_log()
+        if "do not support gamma adjustment" in text:
+            stop()
+            return False, "the compositor does not support gamma adjustment"
+        if "Press ctrl-c to stop" in text:
+            return True, ""
+        if proc.poll() is not None:
+            return False, "gammastep exited unexpectedly"
+        time.sleep(0.05)
+
+    # Slow start: keep the daemon, but do not claim success yet.
+    if proc.poll() is not None:
+        return False, "gammastep exited unexpectedly"
+    return True, ""
 
 
 def apply(cfg=None):
     cfg = cfg or load()
+    mode = cfg.get("mode", "manual")
+
     if not cfg.get("enabled"):
-        rc = _gammastep(["-x"])
-        if rc == 127:
-            save_state(False, NEUTRAL, cfg.get("mode", "manual"), "gammastep is not installed")
-            return 1
-        save_state(False, NEUTRAL, cfg.get("mode", "manual"))
+        stop()
+        save_state(False, NEUTRAL, mode)
         return 0
 
+    if not shutil.which("gammastep"):
+        save_state(True, NEUTRAL, mode, "gammastep is not installed")
+        return 1
+
     temp = target_temp(cfg)
-    rc = _gammastep(["-O", str(temp)])
-    if rc == 127:
-        save_state(True, temp, cfg.get("mode", "manual"), "gammastep is not installed")
-        return 1
-    if rc != 0:
-        save_state(True, temp, cfg.get("mode", "manual"), "gammastep failed")
-        return 1
-    save_state(True, temp, cfg.get("mode", "manual"))
-    return 0
+    pid, running_temp = _running()
+    if pid and running_temp == temp:
+        save_state(True, temp, mode)
+        return 0
+
+    ok, error = start(temp)
+    if ok:
+        save_state(True, temp, mode)
+        return 0
+    save_state(True, temp, mode, error)
+    return 1
 
 
 def main(argv):
@@ -162,9 +317,23 @@ def main(argv):
     if cmd == "status":
         try:
             with open(STATE, encoding="utf-8") as fh:
-                print(fh.read().strip())
-        except OSError:
-            print(json.dumps({"enabled": False, "temp": NEUTRAL, "mode": cfg.get("mode", "manual")}))
+                state = json.load(fh)
+        except (OSError, ValueError):
+            state = {
+                "enabled": False,
+                "temp": NEUTRAL,
+                "mode": cfg.get("mode", "manual"),
+                "error": "",
+            }
+        pid, running_temp = _running()
+        if pid:
+            state["enabled"] = True
+            state["temp"] = running_temp
+        elif state.get("enabled"):
+            state["enabled"] = False
+            state["temp"] = NEUTRAL
+            state["error"] = state.get("error") or "gammastep is not running"
+        print(json.dumps(state))
         return 0
 
     if cmd == "apply":
@@ -196,7 +365,7 @@ def main(argv):
     if cmd == "reset":
         cfg["enabled"] = False
         save(cfg)
-        _gammastep(["-x"])
+        stop()
         save_state(False, NEUTRAL, cfg.get("mode", "manual"))
         return 0
 
