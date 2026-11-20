@@ -1,9 +1,9 @@
 {
-  "cpuLimit": 210,
-  "memLimit": 7424,
-  "shellMemLimit": 1024,
-  "whitelist": "Main, java, REPO.exe, steam, fossilize_repla",
+  "cpuLimit": 90,
+  "memLimit": 0,
+  "shellMemLimit": 0,
+  "whitelist": "Main, java, REPO.exe, steam, fossilize_repla, filmcraft, qemu-system-x86, wf-recorder",
   "scope": "system",
-  "shellCpuLimit": 80,
+  "shellCpuLimit": 25,
   "enabled": true
 }

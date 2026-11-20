@@ -1,10 +1,10 @@
 {
-  "blurStrength": 0.35,
-  "blurRadius": 32,
-  "passwordStyle": "shapes",
-  "clockSize": 112,
+  "blurStrength": 0.4,
+  "blurRadius": 40,
+  "passwordStyle": "dots",
+  "clockSize": 160,
   "enabled": true,
-  "scrimOpacity": 0.55,
+  "scrimOpacity": 0.5,
   "kenBurns": true,
   "parallax": true,
   "floatingShapes": true,
@@ -18,36 +18,42 @@
   "mediaWidget": true,
   "weatherWidget": true,
   "widgets": {
-    "clock": {
-      "x": 0.07671915690104165,
-      "y": 0.5344458912037038
-    },
-    "weather": {
-      "x": 0.7507283528645834,
-      "y": 0.17463469328703699,
-      "shape": "burst",
-      "scale": 1.35
-    },
     "media": {
-      "x": 0.2496358235677083,
-      "y": 0.8707429108796296,
-      "shape": "pentagon"
+      "x": 0.08848876953125002,
+      "y": 0.03
     },
     "user": {
       "x": 0.5,
-      "y": 0.1343525752314815
+      "y": 0.17064814814814827
+    },
+    "weather": {
+      "x": 0.191094970703125,
+      "y": 0.03
+    },
+    "notif": {
+      "x": 0.0941691080729167,
+      "y": 0.09417100694444445
+    },
+    "password": {
+      "x": 0.5,
+      "y": 0.9447207754629628,
+      "scale": 1.1
     },
     "date": {
       "x": 0.5,
-      "y": 0.9287962962962963
+      "y": 0.03
+    },
+    "clock": {
+      "x": 0.5,
+      "y": 0.5
     },
     "power": {
-      "x": 0.5,
-      "y": 0.7513896122685184
+      "x": 0.93,
+      "y": 0.94
     }
   },
   "devMode": false,
-  "devImportMango": true,
+  "devImportMango": false,
   "devShowKeys": true,
   "widgetsNothing": {
     "clock": {
@@ -59,8 +65,8 @@
       "y": 0.32629774305555564
     },
     "media": {
-      "x": 0.14291666666666664,
-      "y": 0.32565031828703705
+      "x": 0.09296956380208331,
+      "y": 0.32759620949074075
     },
     "date": {
       "x": 0.14744873046875,
@@ -74,5 +80,8 @@
       "x": 0.5,
       "y": 0.7344059606481481
     }
-  }
+  },
+  "notifMode": "list",
+  "fillMode": "fill",
+  "devScreenshot": false
 }

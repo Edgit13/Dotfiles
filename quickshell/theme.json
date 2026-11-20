@@ -1,9 +1,10 @@
 {
-  "design": "nothing",
+  "design": "material",
   "uiScale": 0.9,
   "animationSpeed": 1,
   "gtkReload": "notify",
-  "mode": "system",
+  "mode": "dark",
   "cornerStyle": "expressive",
-  "shadows": true
+  "shadows": true,
+  "reduceMotion": false
 }

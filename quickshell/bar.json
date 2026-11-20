@@ -3,7 +3,8 @@
     "position": "left",
     "centerPosition": "same",
     "dnd": false,
-    "width": 380
+    "width": 380,
+    "blocked": []
   },
   "mode": "expanded",
   "gamemode": {
@@ -20,8 +21,8 @@
     "size": 0.75,
     "duration": 2.4000000000000004
   },
-  "style": "full",
-  "openMode": "window",
+  "style": "pill",
+  "openMode": "morph",
   "modules": {
     "mixer": true,
     "tray": true
@@ -32,5 +33,12 @@
   "layout": {
     "active": "dwindle"
   },
-  "pillHover": true
+  "pillHover": true,
+  "live": true,
+  "pillEdgeGap": 8,
+  "trayHidden": [
+    "blueman",
+    "nm-applet",
+    "Easy Effects"
+  ]
 }
