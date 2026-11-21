@@ -15,7 +15,10 @@ Releases are tagged `vX.Y.Z`. Run `./tools/release.sh X.Y.Z` to cut one.
   it names the apps. Detection is event-driven — PipeWire capture streams
   (`pw-dump -m`) plus inotify on `/dev/video*` for apps that open V4L2 directly,
   so the helper (`scripts/privacy.py`) idles at ~0.05% CPU and exits with the
-  shell. Toggle in Settings → Modules → Privacy indicators.
+  shell. The dot is a soft green core with a slow halo pulse, the device glyphs
+  sit beside it on a tinted inset, and the hover card groups apps by device;
+  it follows both the Material 3 and Nothing themes and works in horizontal and
+  vertical bars. Toggle in Settings → Modules → Privacy indicators.
 - Convert ring: select files in a file manager and press <kbd>Super</kbd>+right
   click (or <kbd>Super</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd>) — a ring opens at the
   pointer. First the kind (pictures / video / sound, with how many files of
